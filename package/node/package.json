@@ -1,0 +1,66 @@
+{
+  "name": "@aether-vault/node",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "version": "1.0.12",
+  "description": "Official NodeJS SDK for Aether Vault - Unified secrets and TOTP management",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "echo 'Tests disabled - use npm run test:dev for development'",
+    "test:watch": "echo 'Tests disabled - use npm run test:dev for development'",
+    "test:dev": "jest --config jest.config.js",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "keywords": [
+    "vault",
+    "totp",
+    "aether-vault",
+    "nodejs",
+    "typescript",
+    "sdk",
+    "api",
+    "secrets"
+  ],
+  "author": "Sky Genesis Enterprise",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/skygenesisenterprise/aether-vault.git",
+    "directory": "package/node"
+  },
+  "homepage": "https://github.com/skygenesisenterprise/aether-vault",
+  "bugs": {
+    "url": "https://github.com/skygenesisenterprise/aether-vault/issues"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "jose": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.51.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "globals": "^17.0.0",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.0.0"
+  }
+}
