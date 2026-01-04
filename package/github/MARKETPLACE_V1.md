@@ -1,4 +1,4 @@
-# 🚀 Aether Mailer GitHub App - V1 Marketplace Release
+# 🚀 Aether Vault GitHub App - V1 Marketplace Release
 
 ## 📋 Release Summary
 
@@ -11,7 +11,7 @@
 
 ## 🌟 Overview
 
-The Aether Mailer GitHub App is a production-ready, enterprise-grade application designed for intelligent release orchestration and seamless Ather Mailer integration. This V1 release provides comprehensive webhook handling, security features, and automated workflow management for the Aether ecosystem.
+The Aether Vault GitHub App is a production-ready, enterprise-grade application designed for intelligent release orchestration and seamless Ather Mailer integration. This V1 release provides comprehensive webhook handling, security features, and automated workflow management for the Aether ecosystem.
 
 ### 🎯 Key Features
 
