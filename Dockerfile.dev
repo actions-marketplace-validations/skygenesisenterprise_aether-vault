@@ -1,4 +1,4 @@
-# Development Dockerfile for Aether Mailer
+# Development Dockerfile for Aether Vault
 # Reproduces production environment locally with hot reload capabilities
 # Architecture: Next.js (3000) + Go Backend (8080) + PostgreSQL (5432) + Redis (6379)
 
@@ -73,22 +73,22 @@ RUN npm install -g pnpm && \
     go install github.com/cosmtrek/air@latest
 
 # Create application user
-RUN addgroup --system --gid 1001 mailer && \
-    adduser --system --uid 1001 --ingroup mailer mailer
+RUN addgroup --system --gid 1001 vault && \
+    adduser --system --uid 1001 --ingroup vault vault
 
 # Create necessary directories
 RUN mkdir -p /app /var/log/app /tmp && \
-    chown -R mailer:mailer /app /var/log/app /tmp
+    chown -R vault:vault /app /var/log/app /tmp
 
 WORKDIR /app
 
 # Copy from build stages
-COPY --from=backend-dev --chown=mailer:mailer /server/ ./server/
-COPY --from=frontend-dev --chown=mailer:mailer /app/ ./
+COPY --from=backend-dev --chown=vault:vault /server/ ./server/
+COPY --from=frontend-dev --chown=vault:vault /app/ ./
 
 # Copy development configurations
-COPY --chown=mailer:mailer docker-compose.dev.yml ./docker-compose.dev.yml
-COPY --chown=mailer:mailer .env.example ./.env.example
+COPY --chown=vault:vault docker-compose.dev.yml ./docker-compose.dev.yml
+COPY --chown=vault:vault .env.example ./.env.example
 
 # Create development entrypoint
 RUN echo '#!/bin/bash\n\
@@ -121,12 +121,12 @@ exec supervisord -c /etc/supervisor/conf.d/dev.conf' > /app/docker-entrypoint-de
 RUN mkdir -p /etc/supervisor/conf.d && \
     echo '[supervisord]\n\
 nodaemon=true\n\
-user=mailer\n\
+user=vault\n\
 \n\
 [program:frontend]\n\
 command=pnpm --filter app dev\n\
 directory=/app\n\
-user=mailer\n\
+user=vault\n\
 autorestart=true\n\
 stdout_logfile=/var/log/app/frontend.log\n\
 stderr_logfile=/var/log/app/frontend.error.log\n\
@@ -135,7 +135,7 @@ environment=NODE_ENV=development\n\
 [program:backend]\n\
 command=air -c .air.toml\n\
 directory=/server\n\
-user=mailer\n\
+user=vault\n\
 autorestart=true\n\
 stdout_logfile=/var/log/app/backend.log\n\
 stderr_logfile=/var/log/app/backend.error.log\n\
@@ -144,13 +144,13 @@ environment=GO_ENV=development\n\
 [program:cli]\n\
 command=pnpm --filter cli dev\n\
 directory=/app\n\
-user=mailer\n\
+user=vault\n\
 autorestart=true\n\
 stdout_logfile=/var/log/app/cli.log\n\
 stderr_logfile=/var/log/app/cli.error.log' > /etc/supervisor/conf.d/dev.conf
 
 # Switch to application user
-USER mailer
+USER vault
 
 # Expose development ports
 EXPOSE 3000 8080
@@ -159,8 +159,8 @@ EXPOSE 3000 8080
 ENV NODE_ENV=development
 ENV GO_ENV=development
 ENV DATABASE_PROVIDER=postgresql
-ENV POSTGRES_DB=aether_mailer_dev
-ENV POSTGRES_USER=mailer
+ENV POSTGRES_DB=aether_vault_dev
+ENV POSTGRES_USER=vault
 ENV POSTGRES_PASSWORD=dev_password
 ENV REDIS_URL=redis://redis:6379
 ENV REDIS_PASSWORD=dev_redis_password
