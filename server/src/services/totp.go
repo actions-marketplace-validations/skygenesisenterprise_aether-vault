@@ -1,7 +1,7 @@
 package services
 
 import (
-	"aether-vault/src/model"
+	"github.com/skygenesisenterprise/aether-vault/server/src/model"
 	"crypto/rand"
 	"encoding/base32"
 	"errors"

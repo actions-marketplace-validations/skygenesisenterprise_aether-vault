@@ -1,8 +1,8 @@
 package controllers
 
 import (
-	"aether-vault/src/model"
-	"aether-vault/src/services"
+	"github.com/skygenesisenterprise/aether-vault/server/src/model"
+	"github.com/skygenesisenterprise/aether-vault/server/src/services"
 	"net/http"
 	"strconv"
 

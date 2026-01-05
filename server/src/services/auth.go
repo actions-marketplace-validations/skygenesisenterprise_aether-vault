@@ -1,8 +1,8 @@
 package services
 
 import (
-	"aether-vault/src/config"
-	"aether-vault/src/model"
+	"github.com/skygenesisenterprise/aether-vault/server/src/config"
+	"github.com/skygenesisenterprise/aether-vault/server/src/model"
 	"fmt"
 	"time"
 

@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"aether-vault/src/model"
+	"github.com/skygenesisenterprise/aether-vault/server/src/model"
 	"net/http"
 	"runtime"
 	"time"

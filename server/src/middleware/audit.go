@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"aether-vault/src/services"
+	"github.com/skygenesisenterprise/aether-vault/server/src/services"
 	"bytes"
 	"fmt"
 	"io"
