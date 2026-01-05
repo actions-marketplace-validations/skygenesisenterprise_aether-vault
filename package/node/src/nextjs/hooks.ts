@@ -3,25 +3,23 @@
  * Provides convenient hooks for common SDK operations.
  */
 
-import React, { useContext, useEffect, useState, useCallback } from "react";
+import * as React from "react";
+import { useContext, useEffect, useState, useCallback } from "react";
 import { createVaultClient, AetherVaultClient, VaultConfig } from "../index.js";
 
-// Type imports pour éviter les conflits
+// Import types from the appropriate modules
 import type {
-  Secret,
+  Secret as VaultSecret,
   CreateSecretRequest,
   SecretListResponse,
-} from "../types/index.js";
+} from "../secrets/secrets.client.js";
+
+import type { Identity } from "../identity/identity.client.js";
 import type {
+  TotpConfig,
   Totp,
-  TotpGenerateRequest,
   TotpListResponse,
-} from "../types/index.js";
-import type {
-  Identity,
-  CreateIdentityRequest,
-  IdentityListResponse,
-} from "../types/index.js";
+} from "../totp/totp.client.js";
 
 /**
  * Default vault configuration for Next.js applications.
@@ -52,7 +50,7 @@ export function createNextVaultClient(
     maxRetries: config?.maxRetries || 3,
     retryDelay: config?.retryDelay || 1000,
     debug: config?.debug ?? false,
-    headers: config?.headers,
+    ...(config?.headers && { headers: config.headers }),
   };
 
   return createVaultClient(finalConfig);
@@ -133,7 +131,7 @@ export function useVault(): VaultContextValue {
  */
 export function useSecrets() {
   const { vault } = useVault();
-  const [secrets, setSecrets] = useState<Secret[]>([]);
+  const [secrets, setSecrets] = useState<VaultSecret[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -160,7 +158,7 @@ export function useSecrets() {
       try {
         setIsLoading(true);
         setError(null);
-        const secret: Secret = await vault.secrets.create(data);
+        const secret: VaultSecret = await vault.secrets.create(data);
         setSecrets((prev) => [...prev, secret]);
         return secret;
       } catch (err) {
@@ -178,7 +176,7 @@ export function useSecrets() {
       try {
         setIsLoading(true);
         setError(null);
-        const updated: Secret = await vault.secrets.update(id, data);
+        const updated: VaultSecret = await vault.secrets.update(id, data);
         setSecrets((prev) =>
           prev.map((secret) =>
             secret.id === id || secret.name === id ? updated : secret,
@@ -256,7 +254,7 @@ export function useTotp() {
 
   const generate = useCallback(
     async (
-      config: TotpGenerateRequest,
+      config: TotpConfig,
       generateBackupCodes = false,
       includeQrCode = true,
     ) => {
@@ -339,7 +337,7 @@ export function useIdentity() {
         setIsLoading(true);
         setError(null);
         const updated: Identity = await vault.identity.update(id, data);
-        setUser((prev) =>
+        setUser((prev: Identity | null) =>
           prev && (prev.id === id || prev.email === id) ? updated : prev,
         );
         return updated;
@@ -394,7 +392,7 @@ export function useAuth() {
 
   const logout = useCallback(async () => {
     try {
-      await vault.auth.revoke();
+      await vault.auth.logout();
       await refetch();
     } catch (err) {
       console.error("Logout error:", err);

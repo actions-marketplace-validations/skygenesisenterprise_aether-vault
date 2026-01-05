@@ -4,7 +4,7 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
 
-    "lib": ["ES2022", "DOM"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["node"],
 
     "outDir": "./dist",
@@ -30,7 +30,8 @@
     "noPropertyAccessFromIndexSignature": false,
 
     "allowSyntheticDefaultImports": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "jsx": "react-jsx"
   },
   "include": ["src/**/*"],
   "exclude": [

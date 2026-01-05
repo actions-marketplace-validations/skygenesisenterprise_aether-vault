@@ -9,6 +9,9 @@ import { AuthClient } from "./auth/auth.client.js";
 import { SecretsClient } from "./secrets/secrets.client.js";
 import { TotpClient } from "./totp/totp.client.js";
 import { IdentityClient } from "./identity/identity.client.js";
+import { AuditClient } from "./audit/audit.client.js";
+import { PolicyClient } from "./policies/policy.client.js";
+import { SystemClient } from "./system/system.client.js";
 
 /**
  * Main Aether Vault client class.
@@ -38,6 +41,21 @@ export class AetherVaultClient {
   public readonly identity: IdentityClient;
 
   /**
+   * Audit client for accessing audit logs.
+   */
+  public readonly audit: AuditClient;
+
+  /**
+   * Policy client for managing access policies.
+   */
+  public readonly policies: PolicyClient;
+
+  /**
+   * System client for health checks and system info.
+   */
+  public readonly system: SystemClient;
+
+  /**
    * Creates a new AetherVaultClient instance.
    *
    * @param config - Client configuration
@@ -50,6 +68,9 @@ export class AetherVaultClient {
     this.secrets = new SecretsClient(this.httpClient);
     this.totp = new TotpClient(this.httpClient);
     this.identity = new IdentityClient(this.httpClient);
+    this.audit = new AuditClient(this.httpClient);
+    this.policies = new PolicyClient(this.httpClient);
+    this.system = new SystemClient(this.httpClient);
   }
 
   /**
@@ -59,13 +80,6 @@ export class AetherVaultClient {
    */
   public updateToken(token: string): void {
     this.httpClient.updateToken(token);
-  }
-
-  /**
-   * Clears the current authentication token.
-   */
-  public clearToken(): void {
-    this.httpClient.clearToken();
   }
 
   /**
@@ -132,3 +146,6 @@ export { AuthClient } from "./auth/auth.client.js";
 export { SecretsClient } from "./secrets/secrets.client.js";
 export { TotpClient } from "./totp/totp.client.js";
 export { IdentityClient } from "./identity/identity.client.js";
+export { AuditClient } from "./audit/audit.client.js";
+export { PolicyClient } from "./policies/policy.client.js";
+export { SystemClient } from "./system/system.client.js";

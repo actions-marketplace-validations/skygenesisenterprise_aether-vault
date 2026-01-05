@@ -1,4 +1,55 @@
 import { VaultClient } from "../core/client.js";
+import { Policy, UserIdentity } from "../types/index.js";
+
+/**
+ * User identity interface.
+ */
+export interface Identity {
+  /** Unique user identifier */
+  id: string;
+
+  /** Username */
+  username: string;
+
+  /** Email address */
+  email: string;
+
+  /** Display name */
+  displayName?: string;
+
+  /** Avatar URL */
+  avatar?: string;
+
+  /** User status */
+  status: "active" | "inactive" | "suspended" | "pending";
+
+  /** User roles */
+  roles: string[];
+
+  /** User permissions */
+  permissions: string[];
+
+  /** Account creation timestamp */
+  createdAt: string;
+
+  /** Last login timestamp */
+  lastLoginAt?: string;
+
+  /** Password last changed timestamp */
+  passwordChangedAt?: string;
+
+  /** Email verification status */
+  emailVerified: boolean;
+
+  /** Two-factor authentication enabled */
+  twoFactorEnabled: boolean;
+
+  /** Account metadata */
+  metadata?: Record<string, unknown>;
+
+  /** Tags for categorization */
+  tags?: string[];
+}
 
 /**
  * User identity interface.
@@ -509,28 +560,36 @@ export class IdentityClient {
   }
 
   /**
-   * Sets up two-factor authentication for an identity.
+   * Gets current user identity information.
    *
-   * @param id - Identity ID, username, or email (omit for current user)
-   * @param password - Current password for verification
-   * @returns Promise resolving to 2FA setup response
+   * @returns Promise resolving to user identity
    *
    * @example
    * ```typescript
-   * const setup = await vault.identity.setupTwoFactor("john.doe@example.com", "currentPassword123");
-   * console.log(setup.qrCode); // QR code for authenticator app
-   * console.log(setup.backupCodes); // Backup codes
+   * const user = await vault.identity.me();
+   * console.log("Current user:", user.email, user.displayName);
    * ```
    */
-  public async setupTwoFactor(
-    id?: string,
-    password?: string,
-  ): Promise<TwoFactorSetupResponse> {
-    const endpoint = id
-      ? `/identity/${id}/2fa/setup`
-      : "/identity/me/2fa/setup";
-    const payload = password ? { password } : {};
-    return this.httpClient.post<TwoFactorSetupResponse>(endpoint, payload);
+  public async me(): Promise<UserIdentity> {
+    return this.httpClient.get<UserIdentity>("/api/v1/identity/me");
+  }
+
+  /**
+   * Gets user policies.
+   *
+   * @returns Promise resolving to user policies
+   *
+   * @example
+   * ```typescript
+   * const policies = await vault.identity.policies();
+   * console.log("User policies:", policies);
+   * ```
+   */
+  public async policies(): Promise<Policy[]> {
+    const response = await this.httpClient.get<{ policies: Policy[] }>(
+      "/api/v1/identity/policies",
+    );
+    return response.policies;
   }
 
   /**

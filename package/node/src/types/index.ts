@@ -1,6 +1,9 @@
+// Re-export all vault-specific types
+export * from "./vault.js";
+
 /**
  * Service type enumeration for registered services.
- * Determines the protocol and connection type for service communication.
+ * Determines protocol and connection type for service communication.
  */
 export type ServiceType =
   | "http"
@@ -12,7 +15,7 @@ export type ServiceType =
 
 /**
  * Health state enumeration for service health monitoring.
- * Represents the current health status of a registered service.
+ * Represents current health status of a registered service.
  */
 export type HealthState = "healthy" | "unhealthy" | "unknown";
 

@@ -5,6 +5,7 @@
 
 import React, { useContext, useEffect, useState, useCallback } from "react";
 import { createVaultClient, AetherVaultClient, VaultConfig } from "../index.js";
+import type { UserIdentity } from "../types/index.js";
 
 /**
  * Default vault configuration for Next.js applications.
@@ -24,19 +25,21 @@ export const DEFAULT_VAULT_CONFIG: Partial<VaultConfig> = {
  * @param config - Optional configuration overrides
  * @returns Configured AetherVaultClient instance
  */
-export function createNextVaultClient(config?: Partial<VaultConfig>): AetherVaultClient {
+export function createNextVaultClient(
+  config?: Partial<VaultConfig>,
+): AetherVaultClient {
   const finalConfig: VaultConfig = {
     baseURL: config?.baseURL || DEFAULT_VAULT_CONFIG.baseURL!,
     auth: {
       type: "session",
       ...config?.auth,
     },
-    timeout: config?.timeout ?? DEFAULT_VAULT_CONFIG.timeout,
-    retry: config?.retry ?? DEFAULT_VAULT_CONFIG.retry,
-    maxRetries: config?.maxRetries ?? DEFAULT_VAULT_CONFIG.maxRetries,
-    retryDelay: config?.retryDelay ?? DEFAULT_VAULT_CONFIG.retryDelay,
-    debug: config?.debug ?? DEFAULT_VAULT_CONFIG.debug,
-    headers: config?.headers,
+    timeout: config?.timeout ?? DEFAULT_VAULT_CONFIG.timeout!,
+    retry: config?.retry ?? DEFAULT_VAULT_CONFIG.retry!,
+    maxRetries: config?.maxRetries ?? DEFAULT_VAULT_CONFIG.maxRetries!,
+    retryDelay: config?.retryDelay ?? DEFAULT_VAULT_CONFIG.retryDelay!,
+    debug: config?.debug ?? DEFAULT_VAULT_CONFIG.debug!,
+    ...(config?.headers && { headers: config.headers }),
   };
 
   return createVaultClient(finalConfig);
@@ -53,7 +56,9 @@ interface VaultContextValue {
   refetch: () => Promise<void>;
 }
 
-const VaultContext = React.createContext<VaultContextValue | undefined>(undefined);
+const VaultContext = React.createContext<VaultContextValue | undefined>(
+  undefined,
+);
 
 /**
  * Provider component for vault client and authentication state.
@@ -97,9 +102,7 @@ export function VaultProvider({
   };
 
   return (
-    <VaultContext.Provider value={value}>
-      {children}
-    </VaultContext.Provider>
+    <VaultContext.Provider value={value}>{children}</VaultContext.Provider>
   );
 }
 
@@ -321,7 +324,7 @@ export function useIdentity() {
         setIsLoading(true);
         setError(null);
         const updated = await vault.identity.update(id, data);
-        setUser((prev) =>
+        setUser((prev: UserIdentity | null) =>
           prev && (prev.id === id || prev.email === id) ? updated : prev,
         );
         return updated;
@@ -375,7 +378,7 @@ export function useAuth() {
   const { vault, isAuthenticated, isLoading, error, refetch } = useVault();
 
   const login = useCallback(
-    async (credentials: { email: string; password: string }) => {
+    async (_credentials: { email: string; password: string }) => {
       // This would need to be implemented based on your auth endpoints
       throw new Error("Login endpoint not implemented in this example");
     },
@@ -384,7 +387,7 @@ export function useAuth() {
 
   const logout = useCallback(async () => {
     try {
-      await vault.auth.revoke();
+      await vault.auth.logout();
       await refetch();
     } catch (err) {
       console.error("Logout error:", err);

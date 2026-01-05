@@ -1,434 +1,313 @@
 import { VaultClient } from "../core/client.js";
 import { AuthConfig } from "../core/config.js";
-import { VaultAuthError } from "../core/errors.js";
-import { ApiResponse } from "../types/index.js";
+import { AuthCredentials, AuthSession, UserIdentity } from "../types/index.js";
 
 /**
- * Authentication client interface.
- * Provides methods for managing authentication tokens and sessions.
+ * Authentication client for Aether Vault API.
+ * Provides login, logout, session management, and user authentication operations.
  */
-export interface IAuthClient {
-  /**
-   * Checks if current authentication is valid.
-   */
-  validate(): Promise<boolean>;
-
-  /**
-   * Refreshes the current authentication token.
-   */
-  refresh(): Promise<void>;
-
-  /**
-   * Revokes the current authentication token.
-   */
-  revoke(): Promise<void>;
-
-  /**
-   * Gets current authentication information.
-   */
-  getCurrentAuth(): Promise<AuthInfo>;
-}
-
-/**
- * Authentication information interface.
- * Details about current authentication state.
- */
-export interface AuthInfo {
-  /** Authentication type being used */
-  type: "jwt" | "bearer" | "session" | "none";
-
-  /** Whether authentication is currently valid */
-  valid: boolean;
-
-  /** Token expiration timestamp (if applicable) */
-  expiresAt?: string | undefined;
-
-  /** Issued at timestamp (if applicable) */
-  issuedAt?: string | undefined;
-
-  /** Additional authentication metadata */
-  metadata?: Record<string, unknown> | undefined;
-}
-
-/**
- * JWT token information.
- * Decoded JWT token details.
- */
-export interface JwtTokenInfo {
-  /** Token subject (user ID) */
-  sub: string;
-
-  /** Token issuer */
-  iss: string;
-
-  /** Token audience(s) */
-  aud: string | string[];
-
-  /** Token expiration timestamp */
-  exp: number;
-
-  /** Token issued at timestamp */
-  iat: number;
-
-  /** Token not valid before timestamp */
-  nbf?: number;
-
-  /** Token identifier */
-  jti?: string;
-
-  /** Additional token claims */
-  [claim: string]: unknown;
-}
-
-/**
- * Session information interface.
- * Details about current session.
- */
-export interface SessionInfo {
-  /** Session identifier */
-  sessionId: string;
-
-  /** User ID associated with session */
-  userId: string;
-
-  /** Session creation timestamp */
-  createdAt: string;
-
-  /** Session last access timestamp */
-  lastAccessAt: string;
-
-  /** Session expiration timestamp */
-  expiresAt: string;
-
-  /** Whether session is active */
-  active: boolean;
-
-  /** Session metadata */
-  metadata?: Record<string, unknown>;
-}
-
-/**
- * Authentication client implementation.
- * Handles JWT, bearer, and session-based authentication.
- */
-export class AuthClient implements IAuthClient {
+export class AuthClient {
   private readonly client: VaultClient;
-  private readonly config: AuthConfig;
-  private tokenInfo?: JwtTokenInfo | undefined;
-  private sessionInfo?: SessionInfo | undefined;
 
   /**
    * Creates a new AuthClient instance.
    *
-   * @param client - Configured VaultClient instance
-   * @param config - Authentication configuration
+   * @param client - VaultClient instance for HTTP requests
+   * @param _config - Authentication configuration (kept for interface compatibility)
    */
-  constructor(client: VaultClient, config: AuthConfig) {
+  constructor(client: VaultClient, _config: AuthConfig) {
     this.client = client;
-    this.config = config;
   }
 
   /**
-   * Validates current authentication.
+   * Authenticates user with credentials.
    *
-   * @returns Promise resolving to validation result
-   */
-  async validate(): Promise<boolean> {
-    try {
-      switch (this.config.type) {
-        case "jwt":
-          return await this.validateJwt();
-
-        case "bearer":
-          return await this.validateBearer();
-
-        case "session":
-          return await this.validateSession();
-
-        case "none":
-          return true;
-
-        default:
-          return false;
-      }
-    } catch (error) {
-      return false;
-    }
-  }
-
-  /**
-   * Refreshes current authentication token.
+   * @param credentials - Login credentials (username/password)
+   * @returns Promise resolving to authentication session with token and user info
    *
-   * @returns Promise resolving when refresh is complete
-   */
-  async refresh(): Promise<void> {
-    try {
-      switch (this.config.type) {
-        case "jwt":
-          await this.refreshJwt();
-          break;
-
-        case "session":
-          await this.refreshSession();
-          break;
-
-        case "bearer":
-          // Bearer tokens typically cannot be refreshed
-          throw new VaultAuthError("Bearer tokens cannot be refreshed");
-
-        case "none":
-          // No authentication to refresh
-          break;
-
-        default:
-          throw new VaultAuthError(
-            `Cannot refresh authentication type: ${this.config.type}`,
-          );
-      }
-    } catch (error) {
-      if (error instanceof VaultAuthError) {
-        throw error;
-      }
-      throw new VaultAuthError(`Failed to refresh authentication: ${error}`);
-    }
-  }
-
-  /**
-   * Revokes current authentication token.
+   * @example
+   * ```typescript
+   * const session = await vault.auth.login({
+   *   username: "user@example.com",
+   *   password: "securePassword123"
+   * });
    *
-   * @returns Promise resolving when revocation is complete
+   * console.log("User logged in:", session.user.email);
+   * console.log("Token expires:", session.expiresAt);
+   * ```
    */
-  async revoke(): Promise<void> {
-    try {
-      const response =
-        await this.client.post<ApiResponse<{ success: boolean }>>(
-          "/auth/revoke",
-        );
+  public async login(credentials: AuthCredentials): Promise<AuthSession> {
+    const response = await this.client.post<{
+      token: string;
+      expires_at: string;
+      user: UserIdentity;
+    }>("/api/v1/auth/login", credentials);
 
-      if (!response.data?.success) {
-        throw new VaultAuthError("Failed to revoke authentication");
-      }
-
-      // Clear local authentication data
-      this.clearAuthData();
-    } catch (error) {
-      if (error instanceof VaultAuthError) {
-        throw error;
-      }
-      throw new VaultAuthError(`Failed to revoke authentication: ${error}`);
-    }
+    // Convert response to AuthSession format
+    return {
+      token: response.token,
+      expiresAt: new Date(response.expires_at),
+      user: response.user,
+      tokenType: "Bearer",
+    };
   }
 
   /**
-   * Gets current authentication information.
+   * Logs out current user and invalidates session.
    *
-   * @returns Promise resolving to authentication info
-   */
-  async getCurrentAuth(): Promise<AuthInfo> {
-    const isValid = await this.validate();
-
-    switch (this.config.type) {
-      case "jwt":
-        return {
-          type: "jwt",
-          valid: isValid,
-          expiresAt: this.tokenInfo
-            ? new Date(this.tokenInfo.exp * 1000).toISOString()
-            : undefined,
-          issuedAt: this.tokenInfo
-            ? new Date(this.tokenInfo.iat * 1000).toISOString()
-            : undefined,
-          metadata: this.tokenInfo,
-        };
-
-      case "bearer":
-        return {
-          type: "bearer",
-          valid: isValid,
-          metadata: {
-            tokenPreview: this.config.token?.substring(0, 10) + "...",
-          },
-        };
-
-      case "session":
-        return {
-          type: "session",
-          valid: isValid,
-          expiresAt: this.sessionInfo?.expiresAt,
-          issuedAt: this.sessionInfo?.createdAt,
-          metadata:
-            (this.sessionInfo as unknown as Record<string, unknown>) ||
-            undefined,
-        };
-
-      case "none":
-        return {
-          type: "none",
-          valid: true,
-        };
-
-      default:
-        throw new VaultAuthError(
-          `Unknown authentication type: ${this.config.type}`,
-        );
-    }
-  }
-
-  /**
-   * Validates JWT token.
+   * @returns Promise resolving when logout is complete
    *
-   * @returns Promise resolving to validation result
+   * @example
+   * ```typescript
+   * await vault.auth.logout();
+   * console.log("User logged out successfully");
+   * ```
    */
-  private async validateJwt(): Promise<boolean> {
-    if (!this.config.token) {
-      return false;
-    }
+  public async logout(): Promise<void> {
+    await this.client.post<void>("/api/v1/auth/logout");
 
-    try {
-      // Check if we have cached token info
-      if (this.tokenInfo) {
-        // Check expiration
-        const now = Math.floor(Date.now() / 1000);
-        if (this.tokenInfo.exp && now >= this.tokenInfo.exp) {
-          return false;
-        }
-        return true;
-      }
-
-      // Validate with server
-      const response = await this.client.post<
-        ApiResponse<{ valid: boolean; info?: JwtTokenInfo }>
-      >("/auth/validate", { token: this.config.token });
-
-      if (response.data?.valid && response.data.info) {
-        this.tokenInfo = response.data.info;
-        return true;
-      }
-
-      return false;
-    } catch (error) {
-      throw new VaultAuthError(`JWT validation failed: ${error}`);
-    }
-  }
-
-  /**
-   * Validates bearer token.
-   *
-   * @returns Promise resolving to validation result
-   */
-  private async validateBearer(): Promise<boolean> {
-    if (!this.config.token) {
-      return false;
-    }
-
-    try {
-      const response = await this.client.post<ApiResponse<{ valid: boolean }>>(
-        "/auth/validate",
-        { token: this.config.token },
-      );
-
-      return response.data?.valid || false;
-    } catch (error) {
-      throw new VaultAuthError(`Bearer token validation failed: ${error}`);
-    }
-  }
-
-  /**
-   * Validates session.
-   *
-   * @returns Promise resolving to validation result
-   */
-  private async validateSession(): Promise<boolean> {
-    try {
-      const response =
-        await this.client.get<
-          ApiResponse<{ valid: boolean; info?: SessionInfo }>
-        >("/auth/session");
-
-      if (response.data?.valid && response.data.info) {
-        this.sessionInfo = response.data.info;
-        return true;
-      }
-
-      return false;
-    } catch (error) {
-      throw new VaultAuthError(`Session validation failed: ${error}`);
-    }
-  }
-
-  /**
-   * Refreshes JWT token.
-   *
-   * @returns Promise resolving when refresh is complete
-   */
-  private async refreshJwt(): Promise<void> {
-    if (!this.config.jwt?.autoRefresh || !this.config.token) {
-      throw new VaultAuthError(
-        "JWT auto-refresh is not enabled or no token available",
-      );
-    }
-
-    try {
-      let newToken: string;
-
-      if (this.config.jwt.refreshFn) {
-        // Use custom refresh function
-        newToken = await this.config.jwt.refreshFn(this.config.token);
-      } else if (this.config.jwt.refreshEndpoint) {
-        // Use refresh endpoint
-        const response = await this.client.post<ApiResponse<{ token: string }>>(
-          this.config.jwt.refreshEndpoint,
-          { token: this.config.token },
-        );
-        newToken = response.data?.token!;
-      } else {
-        throw new VaultAuthError("No JWT refresh method configured");
-      }
-
-      // Update client token
-      this.client.updateToken(newToken);
-      this.config.token = newToken;
-
-      // Clear cached token info to force revalidation
-      this.tokenInfo = undefined;
-    } catch (error) {
-      throw new VaultAuthError(`JWT refresh failed: ${error}`);
-    }
-  }
-
-  /**
-   * Refreshes session.
-   *
-   * @returns Promise resolving when refresh is complete
-   */
-  private async refreshSession(): Promise<void> {
-    if (!this.config.session?.autoRefresh) {
-      throw new VaultAuthError("Session auto-refresh is not enabled");
-    }
-
-    try {
-      const response = await this.client.post<
-        ApiResponse<{ success: boolean }>
-      >(this.config.session.refreshEndpoint || "/auth/session/refresh");
-
-      if (!response.data?.success) {
-        throw new VaultAuthError("Session refresh failed");
-      }
-
-      // Clear cached session info to force revalidation
-      this.sessionInfo = undefined;
-    } catch (error) {
-      throw new VaultAuthError(`Session refresh failed: ${error}`);
-    }
-  }
-
-  /**
-   * Clears local authentication data.
-   */
-  private clearAuthData(): void {
-    this.tokenInfo = undefined;
-    this.sessionInfo = undefined;
+    // Clear local token
     this.client.clearToken();
-    (this.config as any).token = undefined;
+  }
+
+  /**
+   * Gets current authentication session information.
+   *
+   * @returns Promise resolving to session data
+   *
+   * @example
+   * ```typescript
+   * const session = await vault.auth.session();
+   * if (session.valid) {
+   *   console.log("User is authenticated:", session.user.email);
+   * } else {
+   *   console.log("User is not authenticated");
+   * }
+   * ```
+   */
+  public async session(): Promise<{
+    user: UserIdentity;
+    valid: boolean;
+  }> {
+    try {
+      const response = await this.client.get<UserIdentity>(
+        "/api/v1/auth/session",
+      );
+
+      return {
+        user: response,
+        valid: true,
+      };
+    } catch (error) {
+      // If we get an auth error, user is not authenticated
+      if (this.isAuthError(error)) {
+        return {
+          valid: false,
+        } as any; // We'll handle this properly
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Registers a new user account.
+   *
+   * @param userData - User registration data
+   * @returns Promise resolving to created user information
+   *
+   * @example
+   * ```typescript
+   * const user = await vault.auth.register({
+   *   email: "newuser@example.com",
+   *   password: "securePassword123",
+   *   firstName: "John",
+   *   lastName: "Doe"
+   * });
+   *
+   * console.log("User registered:", user.email);
+   * ```
+   */
+  public async register(userData: {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+  }): Promise<UserIdentity> {
+    const response = await this.client.post<{
+      id: string;
+      email: string;
+      first_name: string;
+      last_name: string;
+      created_at: string;
+      updated_at: string;
+      is_active: boolean;
+      roles: string[];
+    }>("/api/v1/auth/register", userData);
+
+    // Convert response to UserIdentity format
+    return {
+      id: response.id,
+      email: response.email,
+      firstName: response.first_name,
+      lastName: response.last_name,
+      createdAt: new Date(response.created_at),
+      updatedAt: new Date(response.updated_at),
+      isActive: response.is_active,
+      roles: response.roles,
+    };
+  }
+
+  /**
+   * Refreshes authentication token.
+   *
+   * @returns Promise resolving to new session with refreshed token
+   *
+   * @example
+   * ```typescript
+   * const refreshedSession = await vault.auth.refresh();
+   * console.log("Token refreshed, expires at:", refreshedSession.expiresAt);
+   * ```
+   */
+  public async refresh(): Promise<AuthSession> {
+    const response = await this.client.post<{
+      token: string;
+      expires_at: string;
+    }>("/api/v1/auth/refresh");
+
+    return {
+      token: response.token,
+      expiresAt: new Date(response.expires_at),
+      user: await this.getCurrentUser(), // Get current user info
+      tokenType: "Bearer",
+    };
+  }
+
+  /**
+   * Changes user password.
+   *
+   * @param passwordData - Password change data
+   * @returns Promise resolving when password is changed
+   *
+   * @example
+   * ```typescript
+   * await vault.auth.changePassword({
+   *   currentPassword: "oldPassword123",
+   *   newPassword: "newPassword456"
+   * });
+   *
+   * console.log("Password changed successfully");
+   * ```
+   */
+  public async changePassword(passwordData: {
+    currentPassword: string;
+    newPassword: string;
+  }): Promise<void> {
+    await this.client.post<void>("/api/v1/auth/change-password", {
+      current_password: passwordData.currentPassword,
+      new_password: passwordData.newPassword,
+    });
+  }
+
+  /**
+   * Requests password reset.
+   *
+   * @param email - Email address for password reset
+   * @returns Promise resolving when reset request is sent
+   *
+   * @example
+   * ```typescript
+   * await vault.auth.forgotPassword("user@example.com");
+   * console.log("Password reset email sent");
+   * ```
+   */
+  public async forgotPassword(email: string): Promise<void> {
+    await this.client.post<void>("/api/v1/auth/forgot-password", {
+      email,
+    });
+  }
+
+  /**
+   * Resets password with reset token.
+   *
+   * @param resetData - Password reset data
+   * @returns Promise resolving when password is reset
+   *
+   * @example
+   * ```typescript
+   * await vault.auth.resetPassword({
+   *   token: "reset-token-123",
+   *   newPassword: "newPassword123"
+   * });
+   *
+   * console.log("Password reset successfully");
+   * ```
+   */
+  public async resetPassword(resetData: {
+    token: string;
+    newPassword: string;
+  }): Promise<void> {
+    await this.client.post<void>("/api/v1/auth/reset-password", {
+      token: resetData.token,
+      new_password: resetData.newPassword,
+    });
+  }
+
+  /**
+   * Validates current authentication token.
+   *
+   * @returns Promise resolving to validation result
+   *
+   * @example
+   * ```typescript
+   * const isValid = await vault.auth.validate();
+   * if (isValid) {
+   *   console.log("Token is valid");
+   * } else {
+   *   console.log("Token is invalid or expired");
+   * }
+   * ```
+   */
+  public async validate(): Promise<boolean> {
+    try {
+      await this.client.get<UserIdentity>("/api/v1/auth/session");
+      return true;
+    } catch (error) {
+      return this.isAuthError(error);
+    }
+  }
+
+  /**
+   * Gets current user information.
+   *
+   * @returns Promise resolving to user identity
+   *
+   * @example
+   * ```typescript
+   * const user = await vault.auth.getCurrentUser();
+   * console.log("Current user:", user.firstName, user.lastName);
+   * ```
+   */
+  public async getCurrentUser(): Promise<UserIdentity> {
+    return this.client.get<UserIdentity>("/api/v1/auth/session");
+  }
+
+  /**
+   * Checks if an error is an authentication error.
+   *
+   * @param error - Error to check
+   * @returns True if error is authentication related
+   */
+  private isAuthError(error: unknown): boolean {
+    if (error && typeof error === "object") {
+      const errorObj = error as any;
+      return (
+        errorObj.code?.includes("UNAUTHORIZED") ||
+        errorObj.code?.includes("AUTH") ||
+        errorObj.code?.includes("TOKEN") ||
+        errorObj.status === 401
+      );
+    }
+    return false;
   }
 }
