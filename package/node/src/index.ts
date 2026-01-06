@@ -12,6 +12,7 @@ import { IdentityClient } from "./identity/identity.client.js";
 import { AuditClient } from "./audit/audit.client.js";
 import { PolicyClient } from "./policies/policy.client.js";
 import { SystemClient } from "./system/system.client.js";
+import { Environment } from "./core/config.types.js";
 
 /**
  * Main Aether Vault client class.
@@ -93,16 +94,45 @@ export class AetherVaultClient {
 }
 
 /**
+ * Configuration options for createVaultClient.
+ */
+export interface CreateVaultClientOptions {
+  /** Configuration file path (default: "vault.config.ts") */
+  configPath?: string;
+  /** Environment to use (default: from NODE_ENV or VAULT_ENV) */
+  environment?: Environment;
+  /** Enable environment variable overrides (default: true) */
+  enableEnvOverrides?: boolean;
+  /** Strict validation mode (default: false) */
+  strict?: boolean;
+  /** Override configuration (takes precedence over file/env) */
+  config?: Partial<VaultConfig>;
+}
+
+/**
  * Creates and returns a configured Aether Vault client.
  * This is the recommended way to initialize the SDK.
  *
- * @param config - Client configuration object
+ * Automatically loads configuration from vault.config.ts if present,
+ * with fallback to environment variables.
+ *
+ * @param optionsOrConfig - Either configuration options for auto-loading or a VaultConfig object
  * @returns Configured AetherVaultClient instance
  *
  * @example
  * ```typescript
  * import { createVaultClient } from "aether-vault";
  *
+ * // Auto-load from vault.config.ts or environment variables
+ * const vault = createVaultClient();
+ *
+ * // Or specify custom options
+ * const vault = createVaultClient({
+ *   environment: "production",
+ *   configPath: "./config/vault.config.ts"
+ * });
+ *
+ * // Or provide explicit config (legacy behavior)
  * const vault = createVaultClient({
  *   baseURL: "/api/v1",
  *   auth: {
@@ -115,8 +145,48 @@ export class AetherVaultClient {
  * await vault.totp.generate("github");
  * ```
  */
-export function createVaultClient(config: VaultConfig): AetherVaultClient {
-  return new AetherVaultClient(config);
+export async function createVaultClient(
+  optionsOrConfig?: CreateVaultClientOptions | VaultConfig,
+): Promise<AetherVaultClient> {
+  // Check if this is a VaultConfig (legacy behavior) or options object
+  const isLegacyConfig =
+    optionsOrConfig &&
+    "baseURL" in optionsOrConfig &&
+    "auth" in optionsOrConfig;
+
+  if (isLegacyConfig) {
+    // Legacy behavior: use provided config directly
+    return new AetherVaultClient(optionsOrConfig as VaultConfig);
+  }
+
+  // New behavior: auto-load configuration
+  const options = (optionsOrConfig as CreateVaultClientOptions) || {};
+
+  try {
+    // Import the config loader dynamically to avoid circular dependencies
+    const { loadVaultConfig } = await import("./core/config.loader.js");
+
+    // Load configuration from file and/or environment
+    const loaderOptions: any = {};
+    if (options.configPath) loaderOptions.configPath = options.configPath;
+    if (options.environment) loaderOptions.environment = options.environment;
+    if (options.enableEnvOverrides !== undefined)
+      loaderOptions.enableEnvOverrides = options.enableEnvOverrides;
+    if (options.strict !== undefined) loaderOptions.strict = options.strict;
+
+    let config = await loadVaultConfig(loaderOptions);
+
+    // Apply any explicit overrides
+    if (options.config) {
+      config = { ...config, ...options.config };
+    }
+
+    return new AetherVaultClient(config);
+  } catch (error) {
+    throw new Error(
+      `Failed to create Aether Vault client: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
 }
 
 // Re-export types and classes for convenience
