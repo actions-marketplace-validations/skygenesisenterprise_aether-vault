@@ -1,6 +1,6 @@
 name: "Aether Vault Action"
 description: "Authenticate with Aether Vault and perform security policy checks"
-author: "Aether Office"
+author: "Sky Genesis Enterprise"
 
 inputs:
   vault-url:
@@ -40,7 +40,7 @@ runs:
     - name: Setup Go environment
       uses: actions/setup-go@v5
       with:
-        go-version: "1.21"
+        go-version: "1.25.5"
 
     - name: Execute Aether Vault binary
       shell: bash

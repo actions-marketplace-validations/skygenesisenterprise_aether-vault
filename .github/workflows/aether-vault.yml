@@ -1,4 +1,4 @@
-name: CI/CD Pipeline with Aether Vault
+name: Aether Vault
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Aether Vault Policy Check
-        uses: aether-office/aether-vault@v1
+        uses: skygenesisenterprise/aether-vault@v1
         with:
           vault-url: ${{ secrets.VAULT_URL }}
           auth-method: github-oidc
@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Aether Vault Build Secrets
-        uses: aether-office/aether-vault@v1
+        uses: skygenesisenterprise/aether-vault@v1
         with:
           vault-url: ${{ secrets.VAULT_URL }}
           auth-method: github-oidc
@@ -53,7 +53,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Aether Vault Deploy Access
-        uses: aether-office/aether-vault@v1
+        uses: skygenesisenterprise/aether-vault@v1
         with:
           vault-url: ${{ secrets.VAULT_URL }}
           auth-method: github-oidc

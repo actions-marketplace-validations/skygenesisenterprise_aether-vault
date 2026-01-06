@@ -1,153 +1,378 @@
-# Aether Vault GitHub Action
+<div align="center">
 
-**Technical documentation for package/action maintainers**
+# 🔐 Aether Vault Action
 
-## Overview
+[![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](https://github.com/skygenesisenterprise/aether-vault/blob/main/LICENSE) [![Go](https://img.shields.io/badge/Go-1.25+-blue?style=for-the-badge&logo=go)](https://golang.org/) [![GitHub Action](https://img.shields.io/badge/GitHub_Action-Verified-green?style=for-the-badge&logo=github)](https://github.com/marketplace) [![OIDC](https://img.shields.io/badge/OIDC-Enabled-orange?style=for-the-badge)](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect)
 
-This is the internal implementation of the Aether Vault GitHub Action. All business logic lives here in Go, while the root `action.yml` serves only as a facade for end users.
+**🚀 Enterprise-Ready GitHub Action for Secure Aether Vault Authentication**
 
-## Architecture
+A comprehensive GitHub Action that provides **secure, zero-knowledge authentication** with Aether Vault using **GitHub OIDC tokens**. Features enterprise-grade security, multi-platform support, and seamless integration into CI/CD pipelines.
+
+[🚀 Quick Start](#-quick-start) • [📋 Features](#-features) • [🛠️ Tech Stack](#️-tech-stack) • [📁 Architecture](#-architecture) • [🔧 Usage](#-usage) • [🤝 Contributing](#-contributing)
+
+[![GitHub stars](https://img.shields.io/github/stars/skygenesisenterprise/aether-vault?style=social)](https://github.com/skygenesisenterprise/aether-vault/stargazers) [![GitHub forks](https://img.shields.io/github/forks/skygenesisenterprise/aether-vault?style=social)](https://github.com/skygenesisenterprise/aether-vault/network) [![GitHub issues](https://img.shields.io/github/issues/github/skygenesisenterprise/aether-vault)](https://github.com/skygenesisenterprise/aether-vault/issues)
+
+</div>
+
+---
+
+## 🌟 What is Aether Vault Action?
+
+**Aether Vault Action** is a **secure, enterprise-grade GitHub Action** that provides **zero-knowledge authentication** with Aether Vault using **GitHub OIDC tokens**. It eliminates the need for static secrets while maintaining the highest security standards for CI/CD pipelines.
+
+### 🎯 Our Security-First Vision
+
+- **🔐 Zero-Knowledge Authentication** - No static secrets stored in repository
+- **🚀 GitHub OIDC Integration** - Native token exchange with GitHub Actions
+- **⚡ Multi-Platform Support** - Linux, macOS (amd64, arm64) binaries
+- **🛡️ Enterprise-Grade Security** - Role-based access, short-lived tokens
+- **📋 Policy Enforcement** - Security policy checks with detailed reporting
+- **🔗 Seamless Integration** - Drop-in replacement for existing workflows
+- **📊 Comprehensive Auditing** - Detailed logs and correlation IDs
+- **🎨 Developer-Friendly** - Simple configuration, clear error messages
+
+---
+
+## 🆕 What's New - Latest Features
+
+### 🎯 **Major Enhancements in v1.0+**
+
+#### 🔐 **Enhanced Security Model** (NEW)
+
+- ✅ **GitHub OIDC Authentication** - Native token exchange without static secrets
+- ✅ **Short-Lived Tokens** - Ephemeral Vault tokens with configurable TTL
+- ✅ **Role-Based Access** - Fine-grained permissions through Vault roles
+- ✅ **Policy Enforcement** - Security policy checks with violation reporting
+- ✅ **Audit Trail** - Complete logging with correlation IDs
+
+#### 🚀 **Multi-Platform Architecture** (IMPROVED)
+
+- ✅ **Cross-Platform Binaries** - Linux and macOS support
+- ✅ **Multi-Architecture** - amd64 and arm64 binaries included
+- ✅ **Composite Action** - Efficient GitHub Actions implementation
+- ✅ **Go-Based Backend** - High-performance native Go binary
+
+#### 📊 **Enhanced User Experience** (IMPROVED)
+
+- ✅ **Intuitive Configuration** - Simple, well-documented inputs
+- ✅ **Clear Error Messages** - Helpful debugging information
+- ✅ **Comprehensive Examples** - Real-world usage patterns
+- ✅ **Detailed Documentation** - Complete API and usage guides
+
+---
+
+## 📊 Current Status
+
+> **✅ Production Ready**: Enterprise-grade security with GitHub OIDC integration.
+
+### ✅ **Currently Implemented**
+
+#### 🔐 **Core Security Features**
+
+- ✅ **GitHub OIDC Authentication** - Complete token exchange implementation
+- ✅ **Zero-Knowledge Model** - No static secrets in repository
+- ✅ **Multi-Platform Support** - Linux/macOS binaries (amd64/arm64)
+- ✅ **Policy Enforcement** - Security checks with detailed reporting
+- ✅ **Audit Logging** - Structured logs with correlation IDs
+
+#### 🛠️ **Technical Implementation**
+
+- ✅ **Go Backend Binary** - High-performance native implementation
+- ✅ **Composite Action** - Efficient GitHub Actions integration
+- ✅ **Multi-Architecture** - Cross-platform binary compilation
+- ✅ **Error Handling** - Comprehensive error reporting
+- ✅ **Input Validation** - Secure configuration validation
+
+#### 📋 **Developer Experience**
+
+- ✅ **Simple Configuration** - Intuitive input parameters
+- ✅ **Clear Documentation** - Comprehensive usage guides
+- ✅ **Real-World Examples** - Practical implementation patterns
+- ✅ **Debugging Support** - Verbose logging and troubleshooting
+
+### 🔄 **In Development**
+
+- **Windows Platform Support** - Additional platform coverage
+- **Advanced Policy Engine** - Enhanced security rule evaluation
+- **Performance Optimizations** - Caching and connection pooling
+- **Extended Audit Features** - Enhanced reporting capabilities
+
+### 📋 **Planned Features**
+
+- **Multi-Vault Support** - Connect to multiple Vault instances
+- **Secret Injection** - Automatic secret population in workflows
+- **Webhook Integration** - Real-time security event notifications
+- **Advanced Analytics** - Security metrics and insights
+
+---
+
+## 🚀 Quick Start
+
+### 📋 Prerequisites
+
+- **GitHub Repository** with OIDC enabled
+- **Aether Vault Server** with GitHub OIDC configuration
+- **Vault Role** configured for your repository
+- **GitHub Actions** workflow permissions
+
+### 🔧 Basic Usage
+
+1. **Enable OIDC in your GitHub repository**
+
+2. **Configure Vault role for your repository**
+
+3. **Add the action to your workflow**
+
+```yaml
+name: Deploy with Security
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Required for OIDC
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate with Aether Vault
+        uses: skygenesisenterprise/aether-vault@v1
+        with:
+          vault-url: ${{ secrets.VAULT_URL }}
+          auth-method: github-oidc
+          role: my-app-role
+          policy-mode: enforce
+```
+
+### 🎯 **Advanced Configuration**
+
+```yaml
+- name: Advanced Aether Vault Authentication
+  uses: skygenesisenterprise/aether-vault@v1
+  with:
+    vault-url: ${{ secrets.VAULT_URL }}
+    auth-method: github-oidc
+    role: production-deploy-role
+    policy-mode: enforce
+    audience: aether-vault
+    allow-token-output: false
+  env:
+    LOG_LEVEL: debug
+```
+
+---
+
+## 🛠️ Tech Stack
+
+### 🔐 **Security Layer**
+
+```
+GitHub OIDC + Aether Vault
+├── 🎯 JWT Token Exchange (GitHub Actions)
+├── 🔐 Role-Based Authentication (Vault)
+├── 📋 Policy Enforcement (Security Rules)
+├── 📊 Audit Logging (Structured JSON)
+└── 🚀 Zero-Knowledge Model (No Static Secrets)
+```
+
+### ⚙️ **Implementation Layer**
+
+```
+Go 1.25+ + GitHub Actions
+├── 🐹 Native Go Binary (High Performance)
+├── 🔗 Composite Action (Efficient Integration)
+├── 🌐 HTTP Client (Resty Library)
+├── 📝 Structured Logging (Logrus)
+└── 🔧 Input Validation (Go Validation)
+```
+
+### 🏗️ **Platform Support**
+
+```
+Multi-Platform Architecture
+├── 🐧 Linux (amd64, arm64)
+├── 🍎 macOS (amd64, arm64)
+├── 🪟 Windows (Planned)
+└── 🐳 Docker (Container Support)
+```
+
+---
+
+## 📁 Architecture
+
+### 🏗️ **Action Structure**
 
 ```
 package/action/
-├── action.yml              # Internal composite action (technical facade)
+├── action.yml                 # GitHub Action definition
 ├── cmd/
-│   └── main.go             # Entry point - CLI interface
+│   └── main.go                # Go binary entry point
 ├── internal/
-│   ├── config/             # Configuration management
-│   ├── auth/               # OIDC authentication with GitHub
-│   ├── vault/              # Vault API client
-│   ├── github/             # GitHub context utilities
-│   └── output/             # GitHub outputs management
-├── bin/                    # Pre-compiled binaries (generated)
-├── go.mod                  # Go modules
-└── README.md               # This file
+│   ├── auth/                  # OIDC authentication
+│   │   └── oidc.go           # GitHub token exchange
+│   ├── config/                # Configuration management
+│   │   └── config.go         # Environment validation
+│   ├── vault/                 # Vault API client
+│   │   └── client.go         # API communication
+│   ├── github/                # GitHub context
+│   │   └── context.go        # Runtime information
+│   └── output/                # Output management
+│       └── manager.go        # GitHub outputs
+├── bin/                       # Pre-compiled binaries
+├── go.mod                     # Go modules
+├── go.sum                     # Dependencies checksum
+├── Makefile                   # Build automation
+├── README.md                  # This documentation
+├── USAGE_EXAMPLES.md          # Usage examples
+└── LICENSE                    # MIT License
 ```
 
-## Security Model
+### 🔄 **Authentication Flow**
 
-- **No long-term secrets**: Uses GitHub OIDC JWT tokens exclusively
-- **Ephemeral tokens**: Vault tokens are short-lived and role-scoped
-- **Zero-knowledge**: No secrets stored in repository
-- **Principle of least privilege**: Minimal permissions by design
-
-## Core Components
-
-### Configuration (`internal/config`)
-
-Loads and validates environment variables from GitHub Actions:
-
-- `VAULT_URL`: Aether Vault server endpoint
-- `AUTH_METHOD`: Authentication method (github-oidc)
-- `ROLE`: Vault role for authentication
-- `POLICY_MODE`: enforce|audit
-- `AUDIENCE`: OIDC audience (default: aether-vault)
-- `ALLOW_TOKEN_OUTPUT`: Security-sensitive token output flag
-
-### Authentication (`internal/auth`)
-
-Handles OIDC token exchange with GitHub Actions:
-
-1. Retrieves JWT token from GitHub Actions OIDC provider
-2. Validates token claims and signatures
-3. Exchanges JWT for Vault token via `/v1/auth/github/login`
-4. Returns ephemeral Vault token for API calls
-
-### Vault Client (`internal/vault`)
-
-Manages interactions with Aether Vault API:
-
-- Authentication via OIDC token exchange
-- Policy checks via `/v1/policies/check`
-- Secret management (future enhancements)
-- Security violation detection
-
-### GitHub Context (`internal/github`)
-
-Extracts GitHub Actions runtime context:
-
-- Repository information
-- Workflow details
-- Actor and event metadata
-- JWT token retrieval utilities
-
-### Output Management (`internal/output`)
-
-Handles GitHub Actions outputs:
-
-- Policy check status
-- Report IDs for audit correlation
-- Conditional vault token output (security-controlled)
-
-## Build Process
-
-Binaries are compiled for multiple architectures:
-
-```bash
-# Build all architectures
-make build
-
-# Build specific architecture
-GOOS=linux GOARCH=amd64 go build -o bin/aether-vault-linux-amd64 ./cmd
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   GitHub Actions │    │   Aether Vault   │    │   Policy Engine  │
+│   (OIDC Provider)│◄──►│   (Token Store)  │◄──►│   (Security)     │
+│                  │    │                  │    │                 │
+│ • JWT Token     │    │ • Role Mapping   │    │ • Policy Rules   │
+│ • Repository    │    │ • Token Exchange │    │ • Violation Check│
+│ • Workflow      │    │ • Short-Lived    │    │ • Audit Report  │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+            │                       │                       │
+            ▼                       ▼                       ▼
+     ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+     │  Go Binary      │    │  Vault API       │    │  Security Output│
+     │  (Authentication)│   │  (Communication) │   │  (Results)      │
+     │                 │    │                  │    │                 │
+     │ • Token Validation│ │ • HTTP Requests  │    │ • Status Report  │
+     │ • Error Handling │ │ • Response Parse  │    │ • Violation Details│
+     │ • Logging        │ │ • Retry Logic     │    │ • Audit Trail    │
+     └─────────────────┘    └──────────────────┘    └─────────────────┘
 ```
 
-Supported platforms:
+---
 
-- Linux AMD64
-- Linux ARM64
-- (Future: macOS, Windows)
+## 🔧 Usage
 
-## Usage in GitHub Actions
+### 📋 **Input Parameters**
 
-The action is consumed via the root facade:
+| Parameter            | Required | Default        | Description                                       |
+| -------------------- | -------- | -------------- | ------------------------------------------------- | -------- |
+| `vault-url`          | ✅ Yes   | -              | Aether Vault server URL                           |
+| `auth-method`        | ❌ No    | `github-oidc`  | Authentication method                             |
+| `role`               | ❌ No    | -              | Vault role for authentication                     |
+| `policy-mode`        | ❌ No    | `enforce`      | Policy enforcement mode (`enforce`                | `audit`) |
+| `audience`           | ❌ No    | `aether-vault` | OIDC audience for token exchange                  |
+| `allow-token-output` | ❌ No    | `false`        | Allow vault token in outputs (security-sensitive) |
+
+### 📊 **Output Parameters**
+
+| Parameter     | Description                        |
+| ------------- | ---------------------------------- | ------------ |
+| `status`      | Policy check status (`success`     | `violation`) |
+| `report-id`   | Audit report ID for correlation    |
+| `vault-token` | Vault token (if allowed by policy) |
+
+### 🎯 **Usage Examples**
+
+#### **Basic Authentication**
 
 ```yaml
-uses: aether-office/aether-vault@v1
-with:
-  vault-url: ${{ secrets.VAULT_URL }}
-  auth-method: github-oidc
-  role: my-app-role
-  policy-mode: enforce
+- name: Authenticate with Aether Vault
+  uses: skygenesisenterprise/aether-vault@v1
+  with:
+    vault-url: ${{ secrets.VAULT_URL }}
+    role: my-app-role
 ```
 
-## Error Handling
+#### **Policy Enforcement**
 
-All errors are structured and logged with appropriate context:
+```yaml
+- name: Security Policy Check
+  uses: skygenesisenterprise/aether-vault@v1
+  with:
+    vault-url: ${{ secrets.VAULT_URL }}
+    role: security-check-role
+    policy-mode: enforce
+    audience: my-audience
+```
 
-- Authentication failures: Clear OIDC/Vault error messages
-- Policy violations: Detailed violation reports with rule context
-- Network issues: Retry-aware error messages
-- Configuration errors: Validation with helpful guidance
+#### **Audit Mode**
 
-## Logging
+```yaml
+- name: Security Audit
+  uses: skygenesisenterprise/aether-vault@v1
+  with:
+    vault-url: ${{ secrets.VAULT_URL }}
+    role: audit-role
+    policy-mode: audit
+    allow-token-output: true
+```
 
-Structured JSON logging via logrus:
+#### **Debug Mode**
 
-- Levels: INFO, WARN, ERROR, FATAL
-- Context: Repository, workflow, step, user
-- Security: No sensitive data in logs
-- Audit: Correlation IDs for traceability
+```yaml
+- name: Debug Authentication
+  uses: skygenesisenterprise/aether-vault@v1
+  with:
+    vault-url: ${{ secrets.VAULT_URL }}
+    role: debug-role
+  env:
+    LOG_LEVEL: debug
+```
 
-## Development
+---
 
-### Prerequisites
+## 🔧 Development
 
-- Go 1.21+
-- Access to Aether Vault dev instance
-- GitHub OIDC-enabled repository
-
-### Local Development
+### 🎯 **Build Commands**
 
 ```bash
-# Setup
+# Build all platforms
+make build
+
+# Build specific platform
+make linux-amd64
+make linux-arm64
+make darwin-amd64
+make darwin-arm64
+
+# Build current platform
+make build-local
+
+# Run tests
+make test
+
+# Run security checks
+make security
+
+# Format code
+make fmt
+
+# Lint code
+make lint
+
+# Create release package
+make release
+```
+
+### 📋 **Development Workflow**
+
+```bash
+# Setup development environment
 cd package/action
 go mod tidy
 
 # Run tests
-go test ./...
+go test -v ./...
 
 # Build binary
-go build -o bin/aether-vault-linux-amd64 ./cmd
+make build-local
 
 # Test locally
 export VAULT_URL="https://vault.dev.local"
@@ -155,7 +380,7 @@ export AUTH_METHOD="github-oidc"
 ./bin/aether-vault-linux-amd64
 ```
 
-### Testing
+### 🐛 **Testing**
 
 ```bash
 # Unit tests
@@ -164,75 +389,210 @@ go test ./internal/...
 # Integration tests (requires Vault)
 VAULT_URL="https://vault.test.local" go test ./...
 
-# End-to-end tests
-make test-e2e
+# Security checks
+make security
+
+# Code quality
+make check
 ```
 
-## Security Considerations
+---
 
-### Token Security
+## 🔐 Security Considerations
 
-- Vault tokens are never logged
-- Token output requires explicit permission
-- Tokens are short-lived (configurable TTL)
-- Role-based access control enforced
+### 🛡️ **Token Security**
 
-### OIDC Security
+- **No Static Secrets** - Uses GitHub OIDC tokens exclusively
+- **Short-Lived Tokens** - Vault tokens have configurable TTL
+- **Role-Based Access** - Fine-grained permissions through Vault roles
+- **Secure Token Handling** - Tokens never logged or exposed unnecessarily
 
-- JWT signature validation mandatory
-- Claims verification (aud, exp, iat)
-- Repository-scoped authentication
-- No token persistence
+### 🔒 **OIDC Security**
 
-### Network Security
+- **JWT Validation** - Signature and claims verification
+- **Repository Scoping** - Tokens scoped to specific repository
+- **Audience Verification** - Ensures tokens are for intended purpose
+- **Expiration Handling** - Automatic token refresh and expiration
 
-- HTTPS-only communication
-- Certificate validation
-- Request timeouts (30s default)
-- Retry logic for transient failures
+### 🌐 **Network Security**
 
-## Troubleshooting
+- **HTTPS-Only** - All communication encrypted
+- **Certificate Validation** - Proper SSL/TLS certificate verification
+- **Request Timeouts** - Configurable timeout limits
+- **Retry Logic** - Resilient handling of transient failures
 
-### Common Issues
+---
 
-1. **OIDC Token Not Available**
-   - Ensure repository has OIDC enabled
-   - Check `ACTIONS_ID_TOKEN_REQUEST_URL` environment
+## 🚨 Troubleshooting
 
-2. **Vault Authentication Failed**
-   - Verify Vault URL accessibility
-   - Check role configuration in Vault
-   - Validate audience setting
+### 🔧 **Common Issues**
 
-3. **Policy Violation**
-   - Review violation details in logs
-   - Check policy configuration in Vault
-   - Verify repository permissions
+#### **OIDC Token Not Available**
 
-### Debug Mode
+```bash
+# Ensure repository has OIDC enabled
+# Check GitHub repository settings > Actions > General
+# Verify "Actions" is not disabled
+```
 
-Enable verbose logging:
+#### **Vault Authentication Failed**
 
-```yaml
+```bash
+# Verify Vault URL accessibility
+curl -v $VAULT_URL/v1/sys/health
+
+# Check role configuration in Vault
+vault read auth/github/role/your-role-name
+
+# Validate audience setting
+# Ensure audience matches Vault configuration
+```
+
+#### **Policy Violation**
+
+```bash
+# Enable debug logging
 env:
   LOG_LEVEL: debug
+
+# Check policy details in logs
+# Review violation report in action outputs
 ```
 
-## Future Enhancements
+### 🐛 **Debug Mode**
 
-- Secret injection capabilities
-- Advanced policy engine
-- Multi-Vault support
-- Caching for performance
-- Webhook integrations
+```yaml
+- name: Debug Authentication
+  uses: skygenesisenterprise/aether-vault@v1
+  with:
+    vault-url: ${{ secrets.VAULT_URL }}
+    role: debug-role
+  env:
+    LOG_LEVEL: debug
+    VAULT_DEBUG: true
+```
 
-## Dependencies
+---
 
-- `github.com/coreos/go-oidc/v3`: OIDC client library
-- `github.com/go-resty/resty/v2`: HTTP client
-- `github.com/sirupsen/logrus`: Structured logging
-- `gopkg.in/yaml.v3`: YAML parsing
+## 🤝 Contributing
 
-## License
+We're looking for contributors to help enhance this security-focused GitHub Action! Whether you're experienced with Go, GitHub Actions, security, or Vault integration, there's a place for you.
 
-Part of Aether Vault project. See main repository LICENSE file.
+### 🎯 **How to Get Started**
+
+1. **Fork the repository** and create a feature branch
+2. **Read the documentation** and understand the security model
+3. **Join discussions** about security enhancements and features
+4. **Start small** - Documentation, tests, or security improvements
+5. **Follow our security-first guidelines** and code standards
+
+### 🏗️ **Areas Needing Help**
+
+- **Go Development** - Core binary enhancements, security features
+- **GitHub Actions Experts** - Workflow optimization, best practices
+- **Security Specialists** - OIDC implementation, Vault integration
+- **Documentation** - Security guides, usage examples, API docs
+- **Testing** - Unit tests, integration tests, security testing
+- **Platform Support** - Windows binaries, additional architectures
+
+### 📝 **Contribution Process**
+
+1. **Security First** - All changes must maintain security standards
+2. **Create a branch** with a descriptive name
+3. **Implement changes** following Go best practices
+4. **Test thoroughly** including security testing
+5. **Submit a pull request** with security-focused description
+6. **Address feedback** from maintainers and security review
+
+---
+
+## 📞 Support & Community
+
+### 💬 **Get Help**
+
+- 📖 **[Documentation](README.md)** - Complete usage guide
+- 📋 **[Usage Examples](USAGE_EXAMPLES.md)** - Real-world patterns
+- 🐛 **[GitHub Issues](https://github.com/skygenesisenterprise/aether-vault/issues)** - Bug reports and feature requests
+- 💡 **[GitHub Discussions](https://github.com/skygenesisenterprise/aether-vault/discussions)** - Security questions and ideas
+- 📧 **Email** - security@skygenesisenterprise.com
+
+### 🐛 **Reporting Security Issues**
+
+For security vulnerabilities, please email us directly at **security@skygenesisenterprise.com** rather than opening public issues.
+
+---
+
+## 📊 Project Status
+
+| Component                    | Status         | Technology        | Security          | Notes                        |
+| ---------------------------- | -------------- | ----------------- | ----------------- | ---------------------------- |
+| **Core Authentication**      | ✅ Working     | GitHub OIDC       | **Enterprise**    | Complete token exchange      |
+| **Multi-Platform Support**   | ✅ Working     | Go Binaries       | **Hardened**      | Linux/macOS (amd64/arm64)    |
+| **Policy Enforcement**       | ✅ Working     | Vault API         | **Strict**        | Security rule validation     |
+| **Audit Logging**            | ✅ Working     | Structured JSON   | **Comprehensive** | Correlation IDs              |
+| **Error Handling**           | ✅ Working     | Go Error Patterns | **Secure**        | No token leakage             |
+| **Documentation**            | ✅ Working     | Markdown          | **Complete**      | Usage guides and examples    |
+| **Testing Suite**            | 🔄 In Progress | Go Testing        | **Security**      | Unit and integration tests   |
+| **Windows Support**          | 📋 Planned     | Go Compilation    | **Hardened**      | Additional platform coverage |
+| **Performance Optimization** | 📋 Planned     | Go Profiling      | **Enhanced**      | Caching and pooling          |
+
+---
+
+## 🏆 Sponsors & Partners
+
+**Development led by [Sky Genesis Enterprise](https://skygenesisenterprise.com)**
+
+We're looking for security-focused sponsors and partners to help enhance this open-source security tool.
+
+[🤝 Become a Sponsor](https://github.com/sponsors/skygenesisenterprise)
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+```
+MIT License
+
+Copyright (c) 2025 Sky Genesis Enterprise
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+```
+
+---
+
+## 🙏 Acknowledgments
+
+- **Sky Genesis Enterprise** - Project leadership and security expertise
+- **GitHub Actions Team** - Excellent OIDC integration platform
+- **Vault Team** - Secure secrets management solution
+- **Go Community** - High-performance, security-focused programming language
+- **Open Source Security Community** - Tools, libraries, and security best practices
+- **Enterprise Security Experts** - Guidance and security review
+
+---
+
+<div align="center">
+
+### 🚀 **Join Us in Building a More Secure CI/CD Future!**
+
+[⭐ Star This Repo](https://github.com/skygenesisenterprise/aether-vault) • [🐛 Report Issues](https://github.com/skygenesisenterprise/aether-vault/issues) • [💡 Security Discussions](https://github.com/skygenesisenterprise/aether-vault/discussions)
+
+---
+
+**🔐 Enterprise-Grade Security with Zero-Knowledge Authentication!**
+
+**Made with ❤️ by the [Sky Genesis Enterprise](https://skygenesisenterprise.com) security team**
+
+_Building secure, enterprise-ready GitHub Actions with GitHub OIDC integration_
+
+</div>

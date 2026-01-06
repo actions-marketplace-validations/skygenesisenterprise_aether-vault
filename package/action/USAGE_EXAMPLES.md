@@ -4,7 +4,7 @@
 
 ```yaml
 - name: Aether Vault Security Check
-  uses: aether-office/aether-vault@v1
+  uses: skygenesisenterprise/aether-vault@v1
   with:
     vault-url: ${{ secrets.VAULT_URL }}
     auth-method: github-oidc
@@ -21,7 +21,7 @@ jobs:
   security:
     runs-on: ubuntu-latest
     steps:
-      - uses: aether-office/aether-vault@v1
+      - uses: skygenesisenterprise/aether-vault@v1
         with:
           vault-url: ${{ secrets.VAULT_URL }}
           role: security-scan
@@ -32,7 +32,7 @@ jobs:
     needs: security
     runs-on: ubuntu-latest
     steps:
-      - uses: aether-office/aether-vault@v1
+      - uses: skygenesisenterprise/aether-vault@v1
         with:
           vault-url: ${{ secrets.VAULT_URL }}
           role: build-secrets
@@ -49,7 +49,7 @@ jobs:
 
 ```yaml
 - name: Get Environment Secrets
-  uses: aether-office/aether-vault@v1
+  uses: skygenesisenterprise/aether-vault@v1
   with:
     vault-url: ${{ secrets.VAULT_URL }}
     role: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
@@ -62,7 +62,7 @@ jobs:
 
 ```yaml
 - name: Security Audit (Non-blocking)
-  uses: aether-office/aether-vault@v1
+  uses: skygenesisenterprise/aether-vault@v1
   with:
     vault-url: ${{ secrets.VAULT_URL }}
     role: audit-role
@@ -80,7 +80,7 @@ jobs:
 
 ```yaml
 - name: Vault Authentication
-  uses: aether-office/aether-vault@v1
+  uses: skygenesisenterprise/aether-vault@v1
   with:
     vault-url: ${{ secrets.VAULT_URL }}
     role: deploy-role
@@ -100,7 +100,7 @@ jobs:
 
 ```yaml
 - name: Docker Build with Vault Secrets
-  uses: aether-office/aether-vault@v1
+  uses: skygenesisenterprise/aether-vault@v1
   with:
     vault-url: ${{ secrets.VAULT_URL }}
     role: docker-build
@@ -120,7 +120,7 @@ jobs:
 
 ```yaml
 - name: Get K8s Secrets
-  uses: aether-office/aether-vault@v1
+  uses: skygenesisenterprise/aether-vault@v1
   with:
     vault-url: ${{ secrets.VAULT_URL }}
     role: kubernetes-deploy
@@ -151,7 +151,7 @@ roles:
 
 ```yaml
 - name: Get Environment Config
-  uses: aether-office/aether-vault@v1
+  uses: skygenesisenterprise/aether-vault@v1
   with:
     vault-url: ${{ secrets.VAULT_URL }}
     role: ${{ github.environment }}-app
@@ -162,7 +162,7 @@ roles:
 
 ```yaml
 - name: Vault Security Check
-  uses: aether-office/aether-vault@v1
+  uses: skygenesisenterprise/aether-vault@v1
   with:
     vault-url: ${{ secrets.VAULT_URL }}
     role: security-check
@@ -199,7 +199,7 @@ roles:
 
 # After
 - name: Get Deployment Secrets
-  uses: aether-office/aether-vault@v1
+  uses: skygenesisenterprise/aether-vault@v1
   with:
     vault-url: ${{ secrets.VAULT_URL }}
     role: deploy
