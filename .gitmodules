@@ -1,0 +1,4 @@
+[submodule "package/actions"]
+	path = package/actions
+	url = https://github.com/skygenesisenterprise/aether-vault-action.git
+	branch = main
