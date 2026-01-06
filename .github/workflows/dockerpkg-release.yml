@@ -16,10 +16,12 @@ on:
         type: string
 
 env:
-  # Use Docker Hub for official image
-  REGISTRY: docker.io
-  # Use skygenesisenterprise/aether-vault as official image name
-  IMAGE_NAME: skygenesisenterprise/aether-vault
+  # Docker Hub for official image
+  DOCKER_REGISTRY: docker.io
+  DOCKER_IMAGE_NAME: skygenesisenterprise/aether-vault
+  # GitHub Container Registry
+  GHCR_REGISTRY: ghcr.io
+  GHCR_IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build:
@@ -35,12 +37,13 @@ jobs:
 
     outputs:
       version: ${{ steps.version.outputs.version }}
-      image_digest: ${{ steps.build.outputs.digest }}
+      docker_digest: ${{ steps.docker-build.outputs.digest }}
+      ghcr_digest: ${{ steps.ghcr-build.outputs.digest }}
 
     steps:
       - name: Print trigger information
         run: |
-          echo "🐳 Aether Vault Runtime Build"
+          echo "🐳 Aether Vault Runtime Multi-Registry Build"
           echo "Event name: ${{ github.event_name }}"
           echo "Ref: ${{ github.ref }}"
           echo "Ref name: ${{ github.ref_name }}"
@@ -51,9 +54,10 @@ jobs:
           echo "Is tag: ${{ startsWith(github.ref, 'refs/tags/') }}"
           echo "Ends with -runtime: ${{ endsWith(github.ref, '-runtime') }}"
           echo "Should run: ${{ startsWith(github.ref, 'refs/tags/') && endsWith(github.ref, '-runtime') || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}"
-          echo "Registry: ${{ env.REGISTRY }}"
-          echo "Image name: ${{ env.IMAGE_NAME }}"
-          echo "Full image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          echo "Docker Registry: ${{ env.DOCKER_REGISTRY }}"
+          echo "Docker Image: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}"
+          echo "GHCR Registry: ${{ env.GHCR_REGISTRY }}"
+          echo "GHCR Image: ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}"
 
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -239,21 +243,32 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
-      # Login against Docker Hub registry except on PR
+      # Login to Docker Hub registry except on PR
       - name: Log into Docker Hub
         if: github.event_name != 'pull_request'
         uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ${{ env.DOCKER_REGISTRY }}
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      # Extract metadata (tags, labels) for Docker
+      # Login to GitHub Container Registry
+      - name: Log into GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        with:
+          registry: ${{ env.GHCR_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Extract metadata for Docker Hub
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: |
+            ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}
+            ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}
           tags: |
             type=raw,value=v${{ steps.version.outputs.version }}
             type=ref,event=tag,suffix=-runtime
@@ -268,16 +283,18 @@ jobs:
             version=${{ steps.version.outputs.version }}
             security.scan=enabled
             security.policy=zero-trust
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.licenses=MIT
 
-      # Build and push Docker image with Buildx (don't push on PR)
-      - name: Build and push Docker image
-        id: build
+      # Build and push Docker image to Docker Hub
+      - name: Build and push Docker image to Docker Hub
+        id: docker-build
         uses: docker/build-push-action@9e436ba9f2d7bcd1d038c8e55d039d37896ddc5d # v6.18.0
         with:
           context: ./package/docker
           file: ./package/docker/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:v${{ steps.version.outputs.version }}-runtime
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64,linux/arm64
           cache-from: type=gha
@@ -286,39 +303,76 @@ jobs:
           build-args: |
             VERSION=${{ steps.version.outputs.version }}
             BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            REGISTRY=${{ env.DOCKER_REGISTRY }}
+
+      # Build and push Docker image to GitHub Container Registry
+      - name: Build and push Docker image to GHCR
+        id: ghcr-build
+        uses: docker/build-push-action@9e436ba9f2d7bcd1d038c8e55d039d37896ddc5d # v6.18.0
+        with:
+          context: ./package/docker
+          file: ./package/docker/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}:v${{ steps.version.outputs.version }}-runtime
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            REGISTRY=${{ env.GHCR_REGISTRY }}
 
       # Install Cosign for image signing
       - name: Install Cosign
         if: github.event_name != 'pull_request'
         uses: sigstore/cosign-installer@v3.7.0
 
-      # Sign the resulting Docker image digest except on PRs
-      - name: Sign published Docker image
+      # Sign Docker Hub image
+      - name: Sign Docker Hub image
         if: github.event_name != 'pull_request'
         env:
-          # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
-          TAGS: ${{ steps.meta.outputs.tags }}
-          DIGEST: ${{ steps.build.outputs.digest }}
+          TAGS: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:v${{ steps.version.outputs.version }}-runtime
+          DIGEST: ${{ steps.docker-build.outputs.digest }}
         run: |
-          echo "🔐 Signing Docker image with Cosign..."
-          echo "Tags: ${TAGS}"
+          echo "🔐 Signing Docker Hub image..."
+          echo "Tag: ${TAGS}"
           echo "Digest: ${DIGEST}"
-          echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
+          cosign sign --yes ${TAGS}@${DIGEST}
+
+      # Sign GHCR image
+      - name: Sign GHCR image
+        if: github.event_name != 'pull_request'
+        env:
+          TAGS: ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}:v${{ steps.version.outputs.version }}-runtime
+          DIGEST: ${{ steps.ghcr-build.outputs.digest }}
+        run: |
+          echo "🔐 Signing GHCR image..."
+          echo "Tag: ${TAGS}"
+          echo "Digest: ${DIGEST}"
+          cosign sign --yes ${TAGS}@${DIGEST}
 
       # Output image information
       - name: Output image information
         run: |
-          echo "🐳 Aether Vault Runtime built successfully!"
+          echo "🐳 Aether Vault Runtime images built successfully!"
           echo "Version: ${{ steps.version.outputs.version }}"
-          echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
-          echo "Digest: ${{ steps.build.outputs.digest }}"
-          echo "Tags: ${{ steps.meta.outputs.tags }}"
-
+          echo ""
+          echo "📦 Docker Hub (Official):"
+          echo "  Image: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}"
+          echo "  Tag: v${{ steps.version.outputs.version }}-runtime"
+          echo "  Digest: ${{ steps.docker-build.outputs.digest }}"
+          echo ""
+          echo "📦 GitHub Container Registry:"
+          echo "  Image: ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}"
+          echo "  Tag: v${{ steps.version.outputs.version }}-runtime"
+          echo "  Digest: ${{ steps.ghcr-build.outputs.digest }}"
+          echo ""
           if [ "${{ github.event_name }}" != 'pull_request' ]; then
-            echo ""
             echo "🚀 Pull commands:"
-            echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ steps.version.outputs.version }}"
-            echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+            echo "  Docker Hub: docker pull ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:v${{ steps.version.outputs.version }}-runtime"
+            echo "  GHCR: docker pull ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}:v${{ steps.version.outputs.version }}-runtime"
           fi
 
   security-scan:
@@ -331,18 +385,23 @@ jobs:
       security-events: write
       actions: read
 
+    strategy:
+      matrix:
+        registry: [dockerhub, ghcr]
+
     steps:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.24.0
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ needs.build.outputs.version }}
+          image-ref: |
+            ${{ matrix.registry == 'dockerhub' && env.DOCKER_REGISTRY || env.GHCR_REGISTRY }}/${{ matrix.registry == 'dockerhub' && env.DOCKER_IMAGE_NAME || env.GHCR_IMAGE_NAME }}:v${{ needs.build.outputs.version }}-runtime
           format: "sarif"
-          output: "trivy-results.sarif"
+          output: "trivy-results-${{ matrix.registry }}.sarif"
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: "trivy-results.sarif"
+          sarif_file: "trivy-results-${{ matrix.registry }}.sarif"
 
   test-runtime:
     name: Test Runtime
@@ -351,31 +410,31 @@ jobs:
     if: github.event_name != 'pull_request'
     strategy:
       matrix:
+        registry: [dockerhub, ghcr]
         platform: [linux/amd64, linux/arm64]
 
     steps:
       - name: Test runtime image
         run: |
-          echo "🧪 Testing Aether Vault Runtime on ${{ matrix.platform }}..."
+          echo "🧪 Testing Aether Vault Runtime on ${{ matrix.platform }} (${{ matrix.registry }})..."
 
           # Pull the built image
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ needs.build.outputs.version }}
+          IMAGE="${{ matrix.registry == 'dockerhub' && env.DOCKER_REGISTRY || env.GHCR_REGISTRY }}/${{ matrix.registry == 'dockerhub' && env.DOCKER_IMAGE_NAME || env.GHCR_IMAGE_NAME }}:v${{ needs.build.outputs.version }}-runtime"
+          docker pull $IMAGE
 
           # Test basic functionality
           echo "Testing runtime help command..."
-          docker run --rm \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ needs.build.outputs.version }} \
-            --help || echo "Help command executed"
+          docker run --rm $IMAGE --help || echo "Help command executed"
 
           # Test environment detection
           echo "Testing environment detection..."
           docker run --rm \
             -e AETHER_SERVICE_NAME=test \
             -e AETHER_ENVIRONMENT=test \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ needs.build.outputs.version }} \
+            $IMAGE \
             echo "Runtime test successful" || echo "Environment test executed"
 
-          echo "✅ Runtime test completed for ${{ matrix.platform }}"
+          echo "✅ Runtime test completed for ${{ matrix.platform }} (${{ matrix.registry }})"
 
   release:
     name: Create GitHub Release
@@ -414,7 +473,9 @@ jobs:
 
             🔒 **Zero-Environment-Variables Architecture** - Secure execution runtime that eliminates the need for developers to manage environment variables by dynamically injecting configuration from Aether Vault.
 
-            🐳 **Docker Image**: `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ needs.build.outputs.version }}`
+            🐳 **Docker Images**:
+            - **Docker Hub (Official)**: `${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:v${{ needs.build.outputs.version }}-runtime`
+            - **GitHub Container Registry**: `${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}:v${{ needs.build.outputs.version }}-runtime`
 
             📦 **Platform Binaries**:
             - Linux (x86_64, ARM64)
@@ -423,14 +484,25 @@ jobs:
 
             ### 🚀 Quick Start
 
-            #### Docker (Recommended):
+            #### Docker Hub (Official):
             ```bash
             docker run --rm \
               -e AETHER_VAULT_ADDR=https://vault.company.com:8200 \
               -e AETHER_VAULT_TOKEN=${VAULT_TOKEN} \
               -e AETHER_SERVICE_NAME=my-app \
               -e AETHER_ENVIRONMENT=production \
-              ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ needs.build.outputs.version }} \
+              ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:v${{ needs.build.outputs.version }}-runtime \
+              node server.js
+            ```
+
+            #### GitHub Container Registry:
+            ```bash
+            docker run --rm \
+              -e AETHER_VAULT_ADDR=https://vault.company.com:8200 \
+              -e AETHER_VAULT_TOKEN=${VAULT_TOKEN} \
+              -e AETHER_SERVICE_NAME=my-app \
+              -e AETHER_ENVIRONMENT=production \
+              ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}:v${{ needs.build.outputs.version }}-runtime \
               node server.js
             ```
 
@@ -450,7 +522,7 @@ jobs:
             spec:
               containers:
               - name: app
-                image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ needs.build.outputs.version }}
+                image: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:v${{ needs.build.outputs.version }}-runtime
                 env:
                 - name: AETHER_VAULT_ADDR
                   value: "https://vault.company.com:8200"
@@ -461,6 +533,9 @@ jobs:
 
             ### 🔐 Security Features
 
+            - ✅ **Multi-Registry Support** - Docker Hub (official) and GitHub Container Registry
+            - ✅ **Image Signing** - Cosign signatures for both registries
+            - ✅ **Security Scanning** - Trivy vulnerability scanning
             - ✅ **No External Dependencies** - Pure Go implementation without HashiCorp SDKs
             - ✅ **Zero-Trust Architecture** - No static secrets, all retrieved dynamically
             - ✅ **Memory-Only Storage** - Secrets never written to disk
@@ -506,8 +581,27 @@ jobs:
             - **Go Version**: 1.25.5
             - **Platforms**: linux/amd64, linux/arm64
             - **Image Size**: ~8MB (distroless)
+            - **Registries**: Docker Hub + GitHub Container Registry
             - **Security Scan**: ✅ Passed (see Security tab)
             - **Tests**: ✅ Passed
+
+            ### 📋 Image Information
+
+            - **Version**: ${{ needs.build.outputs.version }}
+            - **Docker Hub Digest**: `${{ needs.build.outputs.docker_digest }}`
+            - **GHCR Digest**: `${{ needs.build.outputs.ghcr_digest }}`
+            - **Platforms**: linux/amd64, linux/arm64
+            - **Security Scan**: ✅ Passed (see Security tab)
+
+            ### 🔧 Pull Commands
+
+            ```bash
+            # Docker Hub (Official)
+            docker pull ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:v${{ needs.build.outputs.version }}-runtime
+
+            # GitHub Container Registry
+            docker pull ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}:v${{ needs.build.outputs.version }}-runtime
+            ```
 
             ---
 

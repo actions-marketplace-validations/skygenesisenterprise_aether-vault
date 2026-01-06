@@ -26,3 +26,10 @@ jobs:
         run: |
           echo "Building with vault token: ${{ steps.vault.outputs.vault-token }}"
           docker build . --file Dockerfile --tag aether-mailer:$(date +%s)
+
+      - name: Trigger Multi-Registry Build
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          event-type: docker-multi-registry
+          token: ${{ secrets.GITHUB_TOKEN }}
