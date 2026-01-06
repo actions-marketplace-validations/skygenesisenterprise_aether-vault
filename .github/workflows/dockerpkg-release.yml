@@ -124,6 +124,118 @@ jobs:
             exit 1
           fi
 
+      - name: Build cross-platform binaries
+        run: |
+          echo "🔨 Building cross-platform binaries for Aether Vault Runtime..."
+
+          # Create dist directory
+          mkdir -p dist
+
+          # Define platforms
+          platforms=(
+            "linux/amd64"
+            "linux/arm64" 
+            "windows/amd64"
+            "darwin/amd64"
+            "darwin/arm64"
+          )
+
+          # Build Go runtime binary
+          echo "Building Go runtime..."
+          cd package/docker
+          for platform in "${platforms[@]}"; do
+            IFS='/' read -r GOOS GOARCH <<< "$platform"
+            
+            output_name="aether-runtime"
+            if [ "$GOOS" = "windows" ]; then
+              output_name+=".exe"
+            fi
+            
+            echo "Building runtime for $GOOS/$GOARCH..."
+            GOOS=$GOOS GOARCH=$GOARCH go build \
+              -ldflags="-s -w -X main.version=${{ steps.version.outputs.version }}" \
+              -o "../../dist/${GOOS}-${GOARCH}-${output_name}" \
+              ./cmd/aether-runtime
+          done
+          cd ../..
+
+          echo "✅ Cross-platform binaries built successfully!"
+          ls -la dist/
+
+      - name: Create platform-specific archives
+        run: |
+          echo "📦 Creating platform-specific archives..."
+
+          VERSION="${{ steps.version.outputs.version }}"
+
+          # Create archives for each platform
+          platforms=("linux/amd64" "linux/arm64" "windows/amd64" "darwin/amd64" "darwin/arm64")
+
+          for platform in "${platforms[@]}"; do
+            IFS='/' read -r GOOS GOARCH <<< "$platform"
+            
+            # Create archive directory
+            archive_dir="aether-vault-runtime-${VERSION}-${GOOS}-${GOARCH}"
+            mkdir -p "dist/${archive_dir}"
+            
+            # Copy runtime binary
+            if [ "$GOOS" = "windows" ]; then
+              cp "dist/${GOOS}-${GOARCH}-aether-runtime.exe" "dist/${archive_dir}/"
+            else
+              cp "dist/${GOOS}-${GOARCH}-aether-runtime" "dist/${archive_dir}/"
+            fi
+            
+            # Copy configuration files
+            cp -r package/docker/ "dist/${archive_dir}/" 2>/dev/null || true
+            
+            # Create README for the archive
+            cat > "dist/${archive_dir}/README.md" << EOF
+          # Aether Vault Runtime v${VERSION}
+
+          Platform: ${GOOS}/${GOARCH}
+
+          ## Installation
+
+          1. Extract the archive
+          2. Run the runtime: \`\`\`./aether-runtime\`\`\`
+
+          ## Configuration
+
+          See \`package/docker/\` directory for configuration examples.
+
+          ## Environment Variables
+
+          - AETHER_VAULT_ADDR: Vault server URL
+          - AETHER_VAULT_TOKEN: Vault authentication token
+          - AETHER_SERVICE_NAME: Service name for configuration lookup
+          - AETHER_ENVIRONMENT: Environment (development/staging/production)
+          EOF
+
+            # Create the archive
+            cd dist
+            if [ "$GOOS" = "windows" ]; then
+              zip -r "${archive_dir}.zip" "${archive_dir}"
+            else
+              tar -czf "${archive_dir}.tar.gz" "${archive_dir}"
+            fi
+            cd ..
+            
+            # Clean up archive directory
+            rm -rf "dist/${archive_dir}"
+          done
+
+          echo "✅ Platform archives created!"
+          ls -la dist/*.tar.gz dist/*.zip 2>/dev/null || true
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: aether-vault-runtime-binaries
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+          retention-days: 30
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
@@ -278,6 +390,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Download artifacts
+        uses: actions/download-artifact@v7
+        with:
+          path: artifacts
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         env:
@@ -292,6 +409,11 @@ jobs:
 
             🐳 **Docker Image**: `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ needs.build.outputs.version }}`
 
+            📦 **Platform Binaries**:
+            - Linux (x86_64, ARM64)
+            - Windows (x86_64) 
+            - macOS (x86_64, ARM64)
+
             ### 🚀 Quick Start
 
             #### Docker (Recommended):
@@ -303,6 +425,13 @@ jobs:
               -e AETHER_ENVIRONMENT=production \
               ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ needs.build.outputs.version }} \
               node server.js
+            ```
+
+            #### Binary:
+            Download the appropriate archive for your platform and extract.
+            Then run:
+            ```bash
+            ./aether-runtime --help
             ```
 
             #### Kubernetes:
@@ -383,7 +512,9 @@ jobs:
             _Building secure runtime environments with zero-trust architecture_
           draft: false
           prerelease: false
-          files: ""
+          files: |
+            artifacts/**/*.tar.gz
+            artifacts/**/*.zip
 
   cleanup:
     name: Cleanup

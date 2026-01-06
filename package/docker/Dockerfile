@@ -2,6 +2,10 @@
 # Stage 1: Build the Go binary
 FROM golang:1.25.5-alpine AS builder
 
+# Build arguments
+ARG VERSION=dev
+ARG BUILD_DATE
+
 # Install build dependencies
 RUN apk add --no-cache git ca-certificates tzdata
 
@@ -17,9 +21,13 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build the binary with static linking
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-    -ldflags='-w -s -extldflags "-static"' \
+# Build the binary with static linking (multi-platform support)
+ARG TARGETPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
+
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
+    -ldflags="-w -s -extldflags \"-static\" -X main.version=${VERSION} -X main.buildDate=${BUILD_DATE}" \
     -a -installsuffix cgo \
     -o aether-runtime \
     ./cmd/aether-runtime
@@ -45,7 +53,7 @@ CMD ["--help"]
 # Labels
 LABEL maintainer="Sky Genesis Enterprise <developer@skygenesienterprise.com>"
 LABEL description="Aether Vault Runtime - Secure execution environment for applications"
-LABEL version="1.0.0"
+LABEL version=${VERSION}
 LABEL vendor="Sky Genesis Enterprise"
 
 # Security labels
