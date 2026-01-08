@@ -1,0 +1,116 @@
+version: "3.8"
+
+services:
+  aether-vault-php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    image: aether-vault/php:latest
+    container_name: aether-vault-php-sdk
+    restart: unless-stopped
+
+    # Environment variables
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - VAULT_ENDPOINT=${VAULT_ENDPOINT:-http://localhost:8080}
+      - VAULT_TOKEN=${VAULT_TOKEN:-}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+
+    # Port mapping for PHP-FPM
+    ports:
+      - "9000:9000"
+
+    # Volume mounts
+    volumes:
+      - ./config:/var/www/html/config:ro
+      - ./logs:/var/www/html/logs
+      - ${HOME}/.aether-vault:/var/www/html/.aether-vault:ro
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "php", "-r", "echo 'Aether Vault PHP SDK is healthy';"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Network
+    networks:
+      - aether-vault-network
+
+    # Security
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/www/html/logs
+
+  # Nginx web server for PHP application
+  nginx:
+    image: nginx:alpine
+    container_name: aether-vault-nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./public:/var/www/html/public:ro
+    networks:
+      - aether-vault-network
+    depends_on:
+      - aether-vault-php
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Optional: Redis for caching
+  redis:
+    image: redis:7-alpine
+    container_name: aether-vault-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - aether-vault-network
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  aether-vault-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+
+volumes:
+  redis_data:
+    driver: local
