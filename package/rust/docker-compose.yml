@@ -1,0 +1,108 @@
+version: "3.8"
+
+services:
+  rust-sdk:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: aether-vault/rust:0.1.0
+    container_name: aether-vault-rust-sdk
+    restart: unless-stopped
+    environment:
+      - RUST_LOG=${RUST_LOG:-info}
+      - AETHER_VAULT_URL=${AETHER_VAULT_URL:-https://vault:8200}
+      - AETHER_VAULT_TOKEN=${AETHER_VAULT_TOKEN}
+      - AETHER_VAULT_NAMESPACE=${AETHER_VAULT_NAMESPACE:-}
+      - AETHER_VAULT_MOUNT_POINT=${AETHER_VAULT_MOUNT_POINT:-secret}
+      - AETHER_VAULT_ROLE=${AETHER_VAULT_ROLE:-rust-app}
+    volumes:
+      # Mount certificates for mTLS
+      - ./certs:/app/certs:ro
+      # Mount socket for Unix transport
+      - /tmp/aether-vault:/tmp/aether-vault
+    networks:
+      - aether-vault
+    depends_on:
+      - vault
+    healthcheck:
+      test: ["CMD", "echo", "SDK library loaded"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Example Rust application using the SDK
+  rust-example:
+    build:
+      context: .
+      dockerfile: Dockerfile.example
+    image: aether-vault/rust-example:0.1.0
+    container_name: aether-vault-rust-example
+    restart: unless-stopped
+    environment:
+      - RUST_LOG=${RUST_LOG:-debug}
+      - AETHER_VAULT_URL=https://vault:8200
+      - AETHER_VAULT_TOKEN=${AETHER_VAULT_TOKEN}
+    networks:
+      - aether-vault
+    depends_on:
+      - rust-sdk
+      - vault
+    profiles:
+      - example
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: aether-vault-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis123}
+    volumes:
+      - redis-data:/data
+    networks:
+      - aether-vault
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    profiles:
+      - cache
+
+  # Vault server (dependency)
+  vault:
+    image: hashicorp/vault:1.15.0
+    container_name: aether-vault
+    restart: unless-stopped
+    environment:
+      - VAULT_ADDR=http://0.0.0.0:8200
+      - VAULT_DEV_ROOT_TOKEN_ID=${AETHER_VAULT_TOKEN:-dev-token}
+      - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200
+    ports:
+      - "8200:8200"
+    volumes:
+      - vault-data:/vault/file
+    networks:
+      - aether-vault
+    cap_add:
+      - IPC_LOCK
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    profiles:
+      - dev
+
+volumes:
+  redis-data:
+    driver: local
+  vault-data:
+    driver: local
+
+networks:
+  aether-vault:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
