@@ -76,7 +76,7 @@ func runRootCommand(cmd *cobra.Command) error {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: Failed to get status: %v\n", err)
 	} else {
-		ui.DisplayStatus(status)
+		ui.DisplayStatus(status, ui.FormatTable)
 	}
 
 	// Show available commands

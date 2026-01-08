@@ -76,7 +76,7 @@ func runInitCommand(cmd *cobra.Command, args []string) error {
 
 	// Save configuration
 	configPath := filepath.Join(vaultPath, "config.yaml")
-	if err := config.Save(cfg, configPath); err != nil {
+	if err := config.SaveToFile(cfg, configPath); err != nil {
 		return fmt.Errorf("failed to save configuration: %w", err)
 	}
 

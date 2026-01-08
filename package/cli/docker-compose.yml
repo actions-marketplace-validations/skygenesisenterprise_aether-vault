@@ -1,0 +1,53 @@
+version: "3.8"
+
+services:
+  aether-vault-cli:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: aether-vault-cli:latest
+    container_name: aether-vault-cli
+    environment:
+      - AETHER_VAULT_ENV=production
+      - AETHER_VAULT_LOG_LEVEL=info
+    volumes:
+      # Mount config directory
+      - ./config:/app/config:ro
+      # Mount data directory for persistent storage
+      - aether-vault-data:/app/data
+      # Mount runtime socket if needed
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - aether-vault-network
+    restart: unless-stopped
+    # Health check
+    healthcheck:
+      test: ["CMD", "./aether-vault-cli", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Optional: Redis for caching (if CLI needs it)
+  redis:
+    image: redis:7-alpine
+    container_name: aether-vault-redis
+    volumes:
+      - redis-data:/data
+    networks:
+      - aether-vault-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+volumes:
+  aether-vault-data:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  aether-vault-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
