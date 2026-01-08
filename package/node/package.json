@@ -1,7 +1,7 @@
 {
   "name": "aether-vault",
   "package": "@aether-vault/node",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Official NodeJS SDK for Aether Vault - Unified secrets and TOTP management",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
