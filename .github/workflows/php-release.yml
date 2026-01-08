@@ -62,7 +62,7 @@ jobs:
         working-directory: ./package/php
         run: |
           # Modifier le nom du package pour GitHub Packages
-          jq '.name = "aether-vault"' composer.json > composer.tmp.json
+          jq '.name = "aethervault"' composer.json > composer.tmp.json
           mv composer.tmp.json composer.json
 
       - name: Validate composer.json and composer.lock
@@ -116,7 +116,7 @@ jobs:
             echo "# Aether Vault PHP SDK ${{ github.ref_name }}" >> $GITHUB_OUTPUT
             echo "" >> $GITHUB_OUTPUT
             echo "## 📦 Package Information" >> $GITHUB_OUTPUT
-            echo "- **Package Name**: \`aether-vault\`" >> $GITHUB_OUTPUT
+            echo "- **Package Name**: \`aethervault/sdk\`" >> $GITHUB_OUTPUT
             echo "- **Version**: ${{ github.ref_name }}" >> $GITHUB_OUTPUT
             echo "- **PHP Version**: >= 8.1" >> $GITHUB_OUTPUT
             echo "- **Registry**: GitHub Packages" >> $GITHUB_OUTPUT
@@ -126,7 +126,7 @@ jobs:
             echo "### From GitHub Packages" >> $GITHUB_OUTPUT
             echo '```bash' >> $GITHUB_OUTPUT
             echo 'composer config repositories.github composer https://github.com/${{ github.repository_owner }}' >> $GITHUB_OUTPUT
-            echo 'composer require aether-vault' >> $GITHUB_OUTPUT
+            echo 'composer require aethervault/sdk' >> $GITHUB_OUTPUT
             echo '```' >> $GITHUB_OUTPUT
             echo "" >> $GITHUB_OUTPUT
             echo "" >> $GITHUB_OUTPUT
