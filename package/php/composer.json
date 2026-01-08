@@ -1,5 +1,5 @@
 {
-  "name": "aethervault/sdk",
+  "name": "aether-vault/php-sdk",
   "description": "Secure Aether Vault SDK for PHP applications",
   "type": "library",
   "keywords": [
@@ -33,6 +33,9 @@
   },
   "minimum-stability": "stable",
   "prefer-stable": true,
+  "scripts": {
+    "test": "vendor/bin/phpunit"
+  },
   "config": {
     "sort-packages": true,
     "optimize-autoloader": true

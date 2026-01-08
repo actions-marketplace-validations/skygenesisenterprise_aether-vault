@@ -138,3 +138,9 @@ bin
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# php git ignore 
+*.zip 
+*.phar
+vendor/
+composer.lock
