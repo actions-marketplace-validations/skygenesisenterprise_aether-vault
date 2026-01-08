@@ -22,7 +22,7 @@ final class Vault
         $vault = new self();
         
         if ($endpoint) {
-            $vault->transport = new Client\HttpTransport($endpoint);
+            throw new VaultException('HTTP Transport requires PSR client dependencies');
         }
 
         return $vault;
