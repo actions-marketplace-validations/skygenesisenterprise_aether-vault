@@ -27,9 +27,7 @@ export async function initCommand(options: InitOptions): Promise<void> {
     }
 
     // Get template content
-    const templateContent = await getTemplateContent(
-      options.template || "basic",
-    );
+    const templateContent = await getTemplateContent();
 
     // Write configuration file
     await fs.writeFile(configPath, templateContent, "utf-8");
@@ -47,7 +45,7 @@ export async function initCommand(options: InitOptions): Promise<void> {
   }
 }
 
-async function getTemplateContent(_templateType: string): Promise<string> {
+async function getTemplateContent(): Promise<string> {
   const templatePath = path.join(
     __dirname,
     "..",
@@ -69,7 +67,7 @@ async function getTemplateContent(_templateType: string): Promise<string> {
       .replace(/from "\.\/\.\.\/\.\./g, 'from "@aether-vault/node');
 
     return adjustedContent;
-  } catch (error) {
+  } catch {
     // Fallback to basic template
     return getBasicTemplate();
   }

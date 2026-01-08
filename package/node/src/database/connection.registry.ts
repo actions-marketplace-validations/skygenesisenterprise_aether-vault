@@ -187,11 +187,11 @@ export class ConnectionRegistry {
     const idleThreshold = idleMinutes * 60 * 1000;
 
     return Array.from(this.connections.entries())
-      .filter(([_, conn]) => {
+      .filter(([, conn]) => {
         const idleTime = now - conn.lastActivityAt.getTime();
         return idleTime > idleThreshold && conn.state === "idle";
       })
-      .map(([id, _]) => id);
+      .map(([id]) => id);
   }
 
   /**

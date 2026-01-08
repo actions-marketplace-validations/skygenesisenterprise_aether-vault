@@ -12,6 +12,8 @@ import {
 } from "./policy-engine.js";
 import { MultiLevelEncryption, EncryptionMetadata } from "./encryption.js";
 import { VaultClient } from "../core/client.js";
+import { createHash } from "crypto";
+import { randomBytes } from "crypto";
 
 /**
  * Enhanced secrets client with fine-grained management.
@@ -397,9 +399,7 @@ export class EnhancedSecretsClient {
     value: string,
     encryption: EncryptionMetadata,
   ): string {
-    const crypto = require("crypto");
-    return crypto
-      .createHash("sha256")
+    return createHash("sha256")
       .update(value)
       .update(encryption.checksum)
       .digest("hex");
@@ -440,21 +440,18 @@ export class EnhancedSecretsClient {
    * Generates a new value for automatic rotation.
    */
   private generateNewValue(secret: EnhancedSecret): string {
-    const crypto = require("crypto");
-
     // Generate based on category and current value length
     const length = secret.value ? Math.max(32, secret.value.length) : 32;
 
     if (secret.metadata.category === "api_key") {
-      return crypto
-        .randomBytes(length)
+      return randomBytes(length)
         .toString("base64")
         .replace(/[^a-zA-Z0-9]/g, "")
         .substring(0, length);
     }
 
     if (secret.metadata.category === "encryption_key") {
-      return crypto.randomBytes(length / 2).toString("hex");
+      return randomBytes(length / 2).toString("hex");
     }
 
     // Default: alphanumeric with special characters

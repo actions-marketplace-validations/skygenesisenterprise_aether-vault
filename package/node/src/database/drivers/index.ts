@@ -108,7 +108,7 @@ export class PostgresDriver extends BaseSqlDriver<any> {
 
       // Mock implementation - replace with actual PostgreSQL client
       const connection = {
-        query: async (_sql: string, _params?: any[]) => {
+        query: async () => {
           // Mock query execution
           return { rows: [], rowCount: 0 };
         },
@@ -236,13 +236,13 @@ export class MySqlDriver extends BaseSqlDriver<any> {
 
       // Mock implementation - replace with actual MySQL client
       const connection = {
-        query: async (_sql: string, _params?: any[]) => {
+        query: async () => {
           // Mock query execution
           return [[], null]; // [rows, fields] format for mysql2
         },
-        end: async (callback?: Function) => {
+        end: async (callback?: () => void) => {
           // Mock connection close
-          if (callback) callback(null);
+          if (callback) callback();
         },
         config: connectionConfig,
         credentials: { ...credentials, password: "[REDACTED]" }, // Never expose password
@@ -371,10 +371,10 @@ export class MongoDriver implements DatabaseDriver<any> {
 
       // Mock implementation - replace with actual MongoDB client
       const connection = {
-        db: (_name: string) => ({
-          collection: (_collection: string) => ({
+        db: () => ({
+          collection: () => ({
             find: () => ({ toArray: async () => [] }),
-            insertOne: async (_doc: any) => ({ insertedId: "mock-id" }),
+            insertOne: async () => ({ insertedId: "mock-id" }),
             updateOne: async () => ({ modifiedCount: 1 }),
             deleteOne: async () => ({ deletedCount: 1 }),
           }),
