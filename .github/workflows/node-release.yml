@@ -1,4 +1,4 @@
-name: Node.js Package
+name: Aether Vault Node Release
 
 on:
   push:
@@ -95,11 +95,8 @@ jobs:
 
       - name: Configure GitHub Packages authentication
         run: |
-          echo "//npm.pkg.github.com/:_authToken=\${GITHUB_TOKEN}" > ~/.npmrc
-          echo "@skygenesisenterprise:registry=https://npm.pkg.github.com/" >> ~/.npmrc
-          echo "registry=https://npm.pkg.github.com/" >> ~/.npmrc
-        env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          echo "registry=https://npm.pkg.github.com/" > ~/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> ~/.npmrc
 
       - name: Install dependencies
         working-directory: package/node
