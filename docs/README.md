@@ -260,7 +260,6 @@ Service Architecture Documentation
 
 #### 🎨 **Formatting Standards**
 
-````markdown
 # Heading 1 - Main Section
 
 ## Heading 2 - Subsection
@@ -275,15 +274,12 @@ Service Architecture Documentation
 // Code Example
 const example = "TypeScript code";
 ```
-````
 
 > **💡 Tip**: Helpful hint or best practice
 >
 > **⚠️ Warning**: Important caution or warning
 >
 > **📝 Note**: Additional information or context
-
-```
 
 ---
 
@@ -328,7 +324,7 @@ We welcome contributions in the following areas:
 
 - 📖 **[Documentation Issues](https://github.com/skygenesisenterprise/aether-vault/issues)** - Report documentation problems
 - 💡 **[Documentation Discussions](https://github.com/skygenesisenterprise/aether-vault/discussions)** - Suggest improvements and ask questions
-- 📧 **Email** - docs@skygenesisenterprise.com
+- 📧 **Email** - developer@skygenesisenterprise.com
 - 📝 **[Contributing Guide](../CONTRIBUTING.md)** - Learn how to contribute to documentation
 
 ### 🐛 **Reporting Documentation Issues**
@@ -401,4 +397,3 @@ This documentation is licensed under the **MIT License** - see the [LICENSE](../
 _Creating comprehensive, accessible documentation for developers and users worldwide_
 
 </div>
-```
