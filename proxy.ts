@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { requiresAuthentication } from "./app/lib/navigation-config";
 
 // Import specialized proxies
-import { monitoringProxy } from "./monitoring/proxy";
+import { monitoringProxy } from "./infrastructure/monitoring/proxy";
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
