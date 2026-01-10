@@ -8,7 +8,7 @@
 
 Comprehensive API documentation for the Aether Vault Server - an enterprise-grade authentication and secret management system with advanced security features.
 
-[🔗 Base URL](#-base-url) • [🔐 Authentication](#-authentication) • [👤 Users](#-users) • [🗄️ Secrets](#️-secrets) • [🔐 TOTP](#-totp-2fa) • [🆔 Identity](#-identity) • [📊 Audit](#-audit) • [⚙️ System](#️-system)
+[🔗 Base URL](#-base-url) • [🔐 Authentication](#-authentication) • [👤 Users](#-users) • [🗄️ Secrets](#️-secrets) • [🔐 TOTP](#-totp-2fa) • [🌐 Network](#-network-management) • [🆔 Identity](#-identity) • [📊 Audit](#-audit) • [⚙️ System](#️-system)
 
 </div>
 
@@ -458,6 +458,297 @@ Generates a new TOTP code for verification.
   "data": {
     "code": "123456",
     "expires_in": 30
+  }
+}
+```
+
+---
+
+## 🌐 Network Management Endpoints
+
+All network endpoints require authentication and network middleware validation.
+
+### GET /api/v1/network
+
+Retrieves a list of network configurations accessible to the user.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Query Parameters:**
+
+- `page` (int, optional) - Page number
+- `limit` (int, optional) - Items per page
+- `protocol` (string, optional) - Filter by protocol type
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "networks": [
+      {
+        "id": 1,
+        "name": "Production API",
+        "protocol": "https",
+        "host": "api.example.com",
+        "port": 443,
+        "config": {
+          "timeout": 30,
+          "headers": {
+            "Authorization": "Bearer token"
+          }
+        },
+        "created_at": "2025-01-09T10:00:00Z",
+        "updated_at": "2025-01-09T10:00:00Z"
+      }
+    ]
+  }
+}
+```
+
+### POST /api/v1/network
+
+Creates a new network configuration.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Request:**
+
+```json
+{
+  "name": "Development Server",
+  "protocol": "http",
+  "host": "dev.example.com",
+  "port": 8080,
+  "config": {
+    "timeout": 30,
+    "headers": {
+      "X-API-Key": "dev-api-key"
+    }
+  }
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 2,
+    "name": "Development Server",
+    "protocol": "http",
+    "host": "dev.example.com",
+    "port": 8080,
+    "config": {
+      "timeout": 30,
+      "headers": {
+        "X-API-Key": "dev-api-key"
+      }
+    },
+    "created_at": "2025-01-09T10:00:00Z"
+  }
+}
+```
+
+### GET /api/v1/network/:id
+
+Retrieves a specific network configuration.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "name": "Production API",
+    "protocol": "https",
+    "host": "api.example.com",
+    "port": 443,
+    "config": {
+      "timeout": 30,
+      "headers": {
+        "Authorization": "Bearer token"
+      }
+    },
+    "created_at": "2025-01-09T10:00:00Z",
+    "updated_at": "2025-01-09T10:00:00Z"
+  }
+}
+```
+
+### PUT /api/v1/network/:id
+
+Updates an existing network configuration.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Request:**
+
+```json
+{
+  "name": "Updated Production API",
+  "config": {
+    "timeout": 60,
+    "headers": {
+      "Authorization": "Bearer new-token"
+    }
+  }
+}
+```
+
+### DELETE /api/v1/network/:id
+
+Deletes a network configuration.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Network configuration deleted successfully"
+}
+```
+
+### GET /api/v1/network/protocols
+
+Retrieves the list of supported protocols.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "protocols": [
+      {
+        "name": "http",
+        "description": "HTTP Protocol",
+        "default_port": 80
+      },
+      {
+        "name": "https",
+        "description": "HTTPS Protocol",
+        "default_port": 443
+      },
+      {
+        "name": "ssh",
+        "description": "SSH Protocol",
+        "default_port": 22
+      },
+      {
+        "name": "ftp",
+        "description": "FTP Protocol",
+        "default_port": 21
+      },
+      {
+        "name": "sftp",
+        "description": "SFTP Protocol",
+        "default_port": 22
+      },
+      {
+        "name": "webdav",
+        "description": "WebDAV Protocol",
+        "default_port": 80
+      },
+      {
+        "name": "smb",
+        "description": "SMB Protocol",
+        "default_port": 445
+      },
+      {
+        "name": "nfs",
+        "description": "NFS Protocol",
+        "default_port": 2049
+      },
+      {
+        "name": "rsync",
+        "description": "RSYNC Protocol",
+        "default_port": 873
+      },
+      {
+        "name": "git",
+        "description": "Git Protocol",
+        "default_port": 9418
+      },
+      {
+        "name": "custom",
+        "description": "Custom Protocol",
+        "default_port": null
+      }
+    ]
+  }
+}
+```
+
+### POST /api/v1/network/test
+
+Tests protocol connectivity to a specified endpoint.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Request:**
+
+```json
+{
+  "protocol": "https",
+  "host": "api.example.com",
+  "port": 443,
+  "config": {
+    "timeout": 30,
+    "headers": {
+      "User-Agent": "Aether-Vault/1.0"
+    }
+  }
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "status": "success",
+    "latency_ms": 150,
+    "response": {
+      "status_code": 200,
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    "timestamp": "2025-01-09T10:00:00Z"
+  }
+}
+```
+
+### GET /api/v1/network/:id/status
+
+Retrieves the current status of a network configuration.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "status": "online",
+    "last_check": "2025-01-09T10:00:00Z",
+    "latency_ms": 150,
+    "uptime_percentage": 99.9,
+    "error_count": 0,
+    "last_error": null
   }
 }
 ```

@@ -110,6 +110,16 @@ make go-server
 | `VAULT_AUDIT_LOG_LEVEL`  | Log level            | `info`  | `debug` |
 | `VAULT_AUDIT_LOG_FORMAT` | Log format           | `json`  | `text`  |
 
+### 🌐 **Network Configuration**
+
+| Variable                           | Description                         | Default | Example      |
+| ---------------------------------- | ----------------------------------- | ------- | ------------ |
+| `VAULT_NETWORK_RATE_LIMIT`         | Network requests per minute         | `50`    | `100`        |
+| `VAULT_NETWORK_MAX_CONNECTIONS`    | Max concurrent connections          | `5`     | `10`         |
+| `VAULT_NETWORK_CONNECTION_TIMEOUT` | Connection timeout (seconds)        | `30`    | `60`         |
+| `VAULT_NETWORK_PROTOCOL_WHITELIST` | Allowed protocols (comma-separated) | empty   | `http,https` |
+| `VAULT_NETWORK_PROTOCOL_BLACKLIST` | Blocked protocols (comma-separated) | empty   | `ftp,telnet` |
+
 ---
 
 ## 📝 Configuration Files
@@ -151,6 +161,13 @@ VAULT_JWT_EXPIRATION=3600
 VAULT_AUDIT_ENABLED=true
 VAULT_AUDIT_LOG_LEVEL=info
 VAULT_AUDIT_LOG_FORMAT=json
+
+# Network Configuration
+VAULT_NETWORK_RATE_LIMIT=50
+VAULT_NETWORK_MAX_CONNECTIONS=5
+VAULT_NETWORK_CONNECTION_TIMEOUT=30
+VAULT_NETWORK_PROTOCOL_WHITELIST=
+VAULT_NETWORK_PROTOCOL_BLACKLIST=
 
 # Development Options
 # VAULT_DATABASE_PASSWORD=dev_password
@@ -195,6 +212,13 @@ audit:
   enabled: true
   log_level: "info"
   log_format: "json"
+
+network:
+  rate_limit: 50
+  max_connections: 5
+  connection_timeout: 30
+  protocol_whitelist: []
+  protocol_blacklist: []
 ```
 
 ---

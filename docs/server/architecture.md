@@ -152,12 +152,14 @@ server/
 │   │   ├── audit.go        # Audit Logging
 │   │   ├── system.go       # System Health
 │   │   ├── identity.go     # Identity Management
+│   │   ├── network.go      # Network Management
 │   │   └── policy.go       # Policy Management
 │   ├── middleware/         # HTTP Middleware Stack
 │   │   ├── auth.go         # JWT Authentication
 │   │   ├── security.go     # Security Headers
 │   │   ├── ratelimit.go    # Rate Limiting
 │   │   ├── audit.go        # Audit Logging
+│   │   ├── network.go      # Network Protocol Validation
 │   │   ├── user.go         # User Context
 │   │   └── utils.go        # Utility Middleware
 │   ├── model/              # Data Models & DTOs
@@ -165,6 +167,7 @@ server/
 │   │   ├── secret.go       # Secret Model
 │   │   ├── totp.go         # TOTP Model
 │   │   ├── audit.go        # Audit Model
+│   │   ├── network.go      # Network Model
 │   │   ├── policy.go       # Policy Model
 │   │   └── dto.go          # Data Transfer Objects
 │   ├── routes/             # Route Definitions
@@ -175,6 +178,7 @@ server/
 │   │   ├── secret.go       # Secret Service
 │   │   ├── totp.go         # TOTP Service
 │   │   ├── audit.go        # Audit Service
+│   │   ├── network.go      # Network Service
 │   │   ├── policy.go       # Policy Service
 │   │   └── system.go       # System Service
 │   └── utils/              # Utility Functions

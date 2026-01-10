@@ -321,6 +321,19 @@ type RateLimitConfig struct {
 }
 ```
 
+#### **Network-Specific Rate Limiting**
+
+```go
+// Network Rate Limiting (network middleware)
+type NetworkRateLimitConfig struct {
+    RequestsPerMinute int           `json:"requests_per_minute"` // 50 requests/minute
+    MaxConnections    int           `json:"max_connections"`     // 5 concurrent connections
+    ConnectionTimeout  time.Duration `json:"connection_timeout"`  // 30-second timeout
+    ProtocolWhitelist []string      `json:"protocol_whitelist"` // Allowed protocols
+    ProtocolBlacklist []string      `json:"protocol_blacklist"` // Blocked protocols
+}
+```
+
 #### **Rate Limiting Features**
 
 - **Configurable Limits**: Adjustable request limits per endpoint
@@ -328,6 +341,9 @@ type RateLimitConfig struct {
 - **User-Based Limits**: Different limits for different user roles
 - **IP-Based Limits**: Prevent IP-based abuse
 - **Sliding Windows**: Time-based rate limiting
+- **Network-Specific Limits**: Stricter limits for network endpoints
+- **Connection Limits**: Maximum concurrent connections per user
+- **Protocol Validation**: Whitelist/blacklist for allowed protocols
 
 ### 🌍 **CORS Configuration**
 
@@ -475,12 +491,14 @@ Compliance Standards Supported
 
 #### **Network Threats**
 
-| Threat                         | Description                                   | Mitigation                             |
-| ------------------------------ | --------------------------------------------- | -------------------------------------- |
-| **Man-in-the-Middle**          | Network traffic interception and modification | TLS 1.3, certificate pinning, HSTS     |
-| **DDoS Attacks**               | Overwhelming server with traffic              | Rate limiting, CDN, load balancing     |
-| **Cross-Site Scripting**       | Injection of malicious scripts                | CSP, input validation, output encoding |
-| **Cross-Site Request Forgery** | Unauthorized requests from trusted sites      | CSRF tokens, same-site cookies         |
+| Threat                          | Description                                   | Mitigation                                                  |
+| ------------------------------- | --------------------------------------------- | ----------------------------------------------------------- |
+| **Man-in-the-Middle**           | Network traffic interception and modification | TLS 1.3, certificate pinning, HSTS                          |
+| **DDoS Attacks**                | Overwhelming server with traffic              | Rate limiting, CDN, load balancing                          |
+| **Cross-Site Scripting**        | Injection of malicious scripts                | CSP, input validation, output encoding                      |
+| **Cross-Site Request Forgery**  | Unauthorized requests from trusted sites      | CSRF tokens, same-site cookies                              |
+| **Protocol Injection**          | Malicious protocol configurations             | Network middleware validation, protocol whitelist/blacklist |
+| **Unauthorized Network Access** | Access to restricted network endpoints        | Network-specific rate limiting, connection limits           |
 
 ### 🛡️ **Security Controls**
 
@@ -499,6 +517,7 @@ Compliance Standards Supported
 - **Anomaly Detection**: Behavioral analysis for threat detection
 - **Alerting**: Immediate notification of security events
 - **Log Analysis**: Automated log analysis and correlation
+- **Network Security Monitoring**: Protocol-specific security validation and monitoring
 
 #### **Corrective Controls**
 
