@@ -12,6 +12,8 @@ import { IdentityClient } from "./identity/identity.client.js";
 import { AuditClient } from "./audit/audit.client.js";
 import { PolicyClient } from "./policies/policy.client.js";
 import { SystemClient } from "./system/system.client.js";
+import { UsersClient } from "./users/users.client.js";
+import { NetworkClient } from "./network/network.client.js";
 import { Environment } from "./core/config.types.js";
 
 /**
@@ -57,6 +59,16 @@ export class AetherVaultClient {
   public readonly system: SystemClient;
 
   /**
+   * Users client for managing user accounts.
+   */
+  public readonly users: UsersClient;
+
+  /**
+   * Network client for managing network configurations.
+   */
+  public readonly network: NetworkClient;
+
+  /**
    * Creates a new AetherVaultClient instance.
    *
    * @param config - Client configuration
@@ -72,6 +84,8 @@ export class AetherVaultClient {
     this.audit = new AuditClient(this.httpClient);
     this.policies = new PolicyClient(this.httpClient);
     this.system = new SystemClient(this.httpClient);
+    this.users = new UsersClient(this.httpClient);
+    this.network = new NetworkClient(this.httpClient);
   }
 
   /**
@@ -212,6 +226,8 @@ export {
   ServiceRegistrationResponse,
   ServiceListResponse,
 } from "./types/index.js";
+export * from "./types/user.js";
+export * from "./types/network.js";
 export { AuthClient } from "./auth/auth.client.js";
 export { SecretsClient } from "./secrets/secrets.client.js";
 export { TotpClient } from "./totp/totp.client.js";
@@ -219,3 +235,5 @@ export { IdentityClient } from "./identity/identity.client.js";
 export { AuditClient } from "./audit/audit.client.js";
 export { PolicyClient } from "./policies/policy.client.js";
 export { SystemClient } from "./system/system.client.js";
+export { UsersClient } from "./users/users.client.js";
+export { NetworkClient } from "./network/network.client.js";
