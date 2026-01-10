@@ -98,7 +98,7 @@
   "homepage": "https://github.com/skygenesisenterprise/aether-vault#readme",
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
-      "eslint --fix",
+      "eslint --fix --quiet",
       "prettier --write"
     ],
     "*.{json,md,yml,yaml}": [
