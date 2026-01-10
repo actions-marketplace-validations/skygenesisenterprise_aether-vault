@@ -18,9 +18,11 @@ type Router struct {
 	auditController     *controllers.AuditController
 	systemController    *controllers.SystemController
 	userController      *controllers.UserController
+	networkController   *controllers.NetworkController
 	authMiddleware      *middleware.AuthMiddleware
 	auditMiddleware     *middleware.AuditMiddleware
 	rateLimitMiddleware *middleware.RateLimitMiddleware
+	networkMiddleware   *middleware.NetworkMiddleware
 }
 
 func NewRouter(
@@ -31,6 +33,7 @@ func NewRouter(
 	userService *services.UserService,
 	policyService *services.PolicyService,
 	auditService *services.AuditService,
+	networkService *services.NetworkService,
 ) *Router {
 	authController := controllers.NewAuthController(authService, auditService)
 	secretController := controllers.NewSecretController(secretService)
@@ -39,10 +42,18 @@ func NewRouter(
 	auditController := controllers.NewAuditController(auditService)
 	systemController := controllers.NewSystemController(db)
 	userController := controllers.NewUserController(userService, auditService)
+	networkController := controllers.NewNetworkController(networkService)
 
 	authMiddleware := middleware.NewAuthMiddleware(authService)
 	auditMiddleware := middleware.NewAuditMiddleware(auditService)
 	rateLimitMiddleware := middleware.NewRateLimitMiddleware(100, 60) // 100 requests per minute
+
+	networkConfig := &middleware.NetworkConfig{
+		MaxRequestsPerMinute: 50,
+		MaxConcurrent:        5,
+		TimeoutSeconds:       30,
+	}
+	networkMiddleware := middleware.NewNetworkMiddleware(networkConfig)
 
 	engine := gin.New()
 	engine.Use(gin.Logger())
@@ -62,9 +73,11 @@ func NewRouter(
 		auditController:     auditController,
 		systemController:    systemController,
 		userController:      userController,
+		networkController:   networkController,
 		authMiddleware:      authMiddleware,
 		auditMiddleware:     auditMiddleware,
 		rateLimitMiddleware: rateLimitMiddleware,
+		networkMiddleware:   networkMiddleware,
 	}
 }
 
@@ -117,6 +130,24 @@ func (r *Router) SetupRoutes() {
 	audit.Use(r.authMiddleware.RequireAuth())
 	{
 		audit.GET("/logs", r.auditController.GetAuditLogs)
+	}
+
+	network := v1.Group("/network")
+	network.Use(r.authMiddleware.RequireAuth())
+	network.Use(r.networkMiddleware.ValidateProtocol())
+	network.Use(r.networkMiddleware.NetworkRateLimit())
+	network.Use(r.networkMiddleware.ProtocolSecurity())
+	network.Use(r.networkMiddleware.NetworkLogging())
+	{
+		network.GET("", r.networkController.GetNetworks)
+		network.POST("", r.networkController.CreateNetwork)
+		network.GET("/:id", r.networkController.GetNetwork)
+		network.PUT("/:id", r.networkController.UpdateNetwork)
+		network.DELETE("/:id", r.networkController.DeleteNetwork)
+
+		network.GET("/protocols", r.networkController.GetSupportedProtocols)
+		network.POST("/test", r.networkController.TestProtocol)
+		network.GET("/:id/status", r.networkController.GetProtocolStatus)
 	}
 
 	system := v1.Group("/system")
