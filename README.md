@@ -1018,9 +1018,8 @@ When reporting bugs, please include:
 
 ### 🌟 **Community**
 
-- **Slack** : [aether-vault.slack.com](https://aether-vault.slack.com)
-- **Discord** : [discord.gg/aether-vault](https://discord.gg/aether-vault)
-- **Newsletter** : Subscribe to updates and announcements
+- **Discord** : [discord.gg/skygenesisenterprise](https://skygenesisenterprise.net/discord)
+- **Newsletter** : [Newsletter](https://skygenesisenterprise.net/newsletter)
 
 ---
 
