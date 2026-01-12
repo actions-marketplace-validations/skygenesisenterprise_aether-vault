@@ -31,4 +31,3 @@ package vault
 // - Retry mechanisms and middleware
 //
 // For more detailed examples, see the examples/ directory.
-package vault

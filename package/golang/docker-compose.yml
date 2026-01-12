@@ -1,0 +1,74 @@
+version: "3.8"
+
+services:
+  vault:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aether-vault
+    ports:
+      - "8080:8080"
+    environment:
+      - VAULT_ENDPOINT=http://localhost:8080
+      - VAULT_LOG_LEVEL=info
+      - VAULT_DEBUG=false
+    volumes:
+      - vault_data:/app/data
+      - vault_config:/app/config
+    networks:
+      - vault_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "./vault", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  vault-db:
+    image: postgres:16-alpine
+    container_name: aether-vault-db
+    environment:
+      - POSTGRES_DB=vault
+      - POSTGRES_USER=vault
+      - POSTGRES_PASSWORD=${VAULT_DB_PASSWORD:-vault123}
+    volumes:
+      - vault_db_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - vault_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vault -d vault"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: aether-vault-redis
+    command: redis-server --appendonly yes --requirepass ${VAULT_REDIS_PASSWORD:-redis123}
+    volumes:
+      - vault_redis_data:/data
+    networks:
+      - vault_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  vault_data:
+    driver: local
+  vault_config:
+    driver: local
+  vault_db_data:
+    driver: local
+  vault_redis_data:
+    driver: local
+
+networks:
+  vault_network:
+    driver: bridge
