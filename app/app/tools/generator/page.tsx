@@ -17,6 +17,17 @@ import {
   Save,
   Trash2,
   X,
+  Plus,
+  Search,
+  Filter,
+  Key,
+  CreditCard,
+  User,
+  FileText,
+  MoreVertical,
+  Star,
+  Folder,
+  Edit,
 } from "lucide-react";
 
 interface GeneratorOptions {
@@ -55,6 +66,10 @@ export default function GeneratorPage() {
   const [showHistory, setShowHistory] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [history, setHistory] = useState<GeneratedItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedType, setSelectedType] = useState<string>("all");
+  const [showFavorites, setShowFavorites] = useState(false);
+  const [showPasswords, setShowPasswords] = useState<Set<string>>(new Set());
   const [options, setOptions] = useState<GeneratorOptions>({
     type: "password",
     length: 16,
@@ -153,15 +168,10 @@ export default function GeneratorPage() {
     "jewel",
     "kaleidoscope",
     "lagoon",
-    "meadow",
-    "nebula",
-    "oasis",
     "prism",
     "quill",
-    "rainbow",
     "serenity",
     "temple",
-    "utopia",
     "valor",
     "whisper",
     "xenon",
@@ -290,28 +300,23 @@ export default function GeneratorPage() {
     let score = 0;
     let charsetSize = 0;
 
-    // Calculate charset size
     if (/[a-z]/.test(value)) charsetSize += 26;
     if (/[A-Z]/.test(value)) charsetSize += 26;
     if (/[0-9]/.test(value)) charsetSize += 10;
     if (/[^a-zA-Z0-9]/.test(value)) charsetSize += 32;
 
-    // Calculate entropy
     const entropy = value.length * Math.log2(charsetSize);
 
-    // Length bonus
     if (value.length >= 8) score += 1;
     if (value.length >= 12) score += 1;
     if (value.length >= 16) score += 1;
     if (value.length >= 20) score += 1;
 
-    // Character variety
     if (/[a-z]/.test(value)) score += 1;
     if (/[A-Z]/.test(value)) score += 1;
     if (/[0-9]/.test(value)) score += 1;
     if (/[^a-zA-Z0-9]/.test(value)) score += 1;
 
-    // Determine strength
     let strength: PasswordStrength;
 
     if (score <= 2) {
@@ -361,7 +366,7 @@ export default function GeneratorPage() {
         type === "password" ? calculateStrength(value).score : undefined,
     };
 
-    setHistory((prev) => [newItem, ...prev.slice(0, 19)]); // Keep last 20 items
+    setHistory((prev) => [newItem, ...prev.slice(0, 19)]);
   };
 
   const copyToClipboard = async () => {
@@ -382,6 +387,50 @@ export default function GeneratorPage() {
     generate();
   };
 
+  const togglePasswordVisibility = (itemId: string) => {
+    setShowPasswords((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
+
+  const getItemIcon = (type: string) => {
+    switch (type) {
+      case "password":
+        return Lock;
+      case "passphrase":
+        return Shield;
+      case "username":
+        return User;
+      default:
+        return Key;
+    }
+  };
+
+  const itemTypes = [
+    { value: "all", label: "Tous les éléments", icon: Key },
+    { value: "password", label: "Mots de passe", icon: Lock },
+    { value: "passphrase", label: "Phrases secrètes", icon: Shield },
+    { value: "username", label: "Noms d'utilisateur", icon: User },
+  ];
+
+  const filteredHistory = history.filter((item) => {
+    const matchesSearch =
+      item.value.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.type.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesType = selectedType === "all" || item.type === selectedType;
+    const matchesFavorites =
+      !showFavorites || (item.strength && item.strength >= 75);
+
+    return matchesSearch && matchesType && matchesFavorites;
+  });
+
   useEffect(() => {
     generate();
   }, []);
@@ -391,359 +440,78 @@ export default function GeneratorPage() {
   }, [generatedValue]);
 
   return (
-    <div className="h-full flex flex-col bg-slate-950">
-      {/* Header */}
+    <div className="h-full flex flex-col">
       <div className="flex-shrink-0 p-6 border-b border-slate-800">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-white mb-2">
-                Générateur de sécurité
-              </h1>
-              <p className="text-slate-400">
-                Créez des mots de passe, phrases secrètes et noms d'utilisateur
-                sécurisés
-              </p>
-            </div>
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => setShowHistory(!showHistory)}
-                className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
-                  showHistory
-                    ? "bg-blue-600 text-white"
-                    : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                }`}
-              >
-                <History className="w-4 h-4 mr-2" />
-                Historique ({history.length})
-              </button>
-              <button
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
-                  showAdvanced
-                    ? "bg-purple-600 text-white"
-                    : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                }`}
-              >
-                <Settings className="w-4 h-4 mr-2" />
-                Avancé
-              </button>
-            </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2">Générateur</h1>
+            <p className="text-slate-400">
+              Créez des mots de passe et secrets sécurisés
+            </p>
           </div>
+          <button
+            onClick={regenerate}
+            className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Générer
+          </button>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-hidden">
-        <div className="max-w-7xl mx-auto p-6 h-full">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
-            {/* Generated Output */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Main Generator Card */}
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 h-full flex flex-col">
-                <div className="mb-8">
-                  <div className="flex items-center justify-between mb-4">
-                    <label className="text-lg font-medium text-slate-300">
-                      {options.type === "password" && "Mot de passe généré"}
-                      {options.type === "passphrase" &&
-                        "Phrase secrète générée"}
-                      {options.type === "username" &&
-                        "Nom d'utilisateur généré"}
-                    </label>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => setShowAdvanced(!showAdvanced)}
-                        className="p-2 text-slate-400 hover:text-white transition-colors"
-                      >
-                        <Settings className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
+      <div className="flex-1 flex overflow-hidden">
+        <div className="w-64 flex-shrink-0 border-r border-slate-800 overflow-y-auto">
+          <div className="p-4 space-y-6">
+            <div className="bg-slate-900 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold text-white">Options</h3>
+                <button className="text-slate-400 hover:text-white transition-colors">
+                  <Settings className="w-4 h-4" />
+                </button>
+              </div>
 
-                  <div className="flex items-center space-x-3">
-                    <div className="flex-1 relative">
-                      <input
-                        type={showAdvanced ? "text" : "password"}
-                        value={generatedValue}
-                        readOnly
-                        className="w-full px-6 py-4 bg-slate-800 border border-slate-700 rounded-xl text-white font-mono text-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                      <button
-                        onClick={() => setShowAdvanced(!showAdvanced)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 text-slate-400 hover:text-white transition-colors"
-                      >
-                        {showAdvanced ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-                    <button
-                      onClick={copyToClipboard}
-                      className="flex items-center px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors"
-                    >
-                      {copied ? (
-                        <Check className="w-5 h-5" />
-                      ) : (
-                        <Copy className="w-5 h-5" />
-                      )}
-                    </button>
-                    <button
-                      onClick={regenerate}
-                      className="flex items-center px-6 py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-colors"
-                    >
-                      <RefreshCw className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Password Strength Analysis */}
-                {options.type === "password" && (
-                  <div className="space-y-6 flex-1">
-                    <div className="bg-slate-800 rounded-xl p-6">
-                      <h3 className="text-lg font-semibold text-white mb-4">
-                        Analyse de force
-                      </h3>
-
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-slate-400">
-                            Force du mot de passe
-                          </span>
-                          <span
-                            className={`text-sm font-medium ${passwordStrength.color}`}
-                          >
-                            {passwordStrength.text}
-                          </span>
-                        </div>
-
-                        <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full transition-all duration-500 ${
-                              passwordStrength.score <= 25
-                                ? "bg-red-500"
-                                : passwordStrength.score <= 50
-                                  ? "bg-orange-500"
-                                  : passwordStrength.score <= 75
-                                    ? "bg-yellow-500"
-                                    : "bg-green-500"
-                            }`}
-                            style={{ width: `${passwordStrength.score}%` }}
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <span className="text-slate-400">
-                              Temps pour craquer:
-                            </span>
-                            <span
-                              className={`ml-2 font-medium ${passwordStrength.color}`}
-                            >
-                              {passwordStrength.timeToCrack}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-slate-400">Entropie:</span>
-                            <span
-                              className={`ml-2 font-medium ${passwordStrength.color}`}
-                            >
-                              {passwordStrength.entropy.toFixed(1)} bits
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Character Analysis */}
-                    <div className="bg-slate-800 rounded-xl p-6">
-                      <h3 className="text-lg font-semibold text-white mb-4">
-                        Composition
-                      </h3>
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div className="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
-                          <span className="text-slate-300">Longueur</span>
-                          <span className="text-white font-medium">
-                            {generatedValue.length}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
-                          <span className="text-slate-300">Majuscules</span>
-                          <span className="text-white font-medium">
-                            {(generatedValue.match(/[A-Z]/g) || []).length}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
-                          <span className="text-slate-300">Minuscules</span>
-                          <span className="text-white font-medium">
-                            {(generatedValue.match(/[a-z]/g) || []).length}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
-                          <span className="text-slate-300">Nombres</span>
-                          <span className="text-white font-medium">
-                            {(generatedValue.match(/[0-9]/g) || []).length}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-slate-700 rounded-lg col-span-2">
-                          <span className="text-slate-300">Symboles</span>
-                          <span className="text-white font-medium">
-                            {
-                              (generatedValue.match(/[^a-zA-Z0-9]/g) || [])
-                                .length
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-2">
+                    Type de génération
+                  </label>
+                  <div className="space-y-1">
+                    {itemTypes.map((type) => {
+                      const Icon = type.icon;
+                      return (
+                        <button
+                          key={type.value}
+                          onClick={() => {
+                            setSelectedType(type.value);
+                            if (type.value !== "all") {
+                              setOptions({
+                                ...options,
+                                type: type.value as any,
+                              });
+                              setTimeout(generate, 100);
                             }
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+                          }}
+                          className={`
+                            w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors
+                            ${
+                              selectedType === type.value
+                                ? "bg-blue-600 text-white"
+                                : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                            }
+                          `}
+                        >
+                          <Icon className="w-4 h-4 mr-2" />
+                          {type.label}
+                        </button>
+                      );
+                    })}
                   </div>
-                )}
-
-                {/* Passphrase Info */}
-                {options.type === "passphrase" && (
-                  <div className="space-y-6 flex-1">
-                    <div className="bg-slate-800 rounded-xl p-6">
-                      <h3 className="text-lg font-semibold text-white mb-4">
-                        Informations
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div className="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
-                          <span className="text-slate-300">Mots</span>
-                          <span className="text-white font-medium">
-                            {options.numWords}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
-                          <span className="text-slate-300">Caractères</span>
-                          <span className="text-white font-medium">
-                            {generatedValue.length}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
-                          <span className="text-slate-300">Séparateur</span>
-                          <span className="text-white font-medium">
-                            "{options.wordSeparator}"
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
-                          <span className="text-slate-300">Majuscules</span>
-                          <span className="text-white font-medium">
-                            {options.capitalize ? "Oui" : "Non"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Username Info */}
-                {options.type === "username" && (
-                  <div className="space-y-6 flex-1">
-                    <div className="bg-slate-800 rounded-xl p-6">
-                      <h3 className="text-lg font-semibold text-white mb-4">
-                        Informations
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div className="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
-                          <span className="text-slate-300">Caractères</span>
-                          <span className="text-white font-medium">
-                            {generatedValue.length}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
-                          <span className="text-slate-300">Type</span>
-                          <span className="text-white font-medium">
-                            Aléatoire
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Sidebar */}
-            <div className="space-y-6 h-full">
-              {/* Type Selection */}
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">
-                  Type de génération
-                </h3>
-                <div className="space-y-3">
-                  <button
-                    onClick={() => {
-                      setOptions({ ...options, type: "password" });
-                      setTimeout(generate, 100);
-                    }}
-                    className={`w-full flex items-center p-4 rounded-xl border-2 transition-all ${
-                      options.type === "password"
-                        ? "border-blue-600 bg-blue-600 bg-opacity-20 text-white"
-                        : "border-slate-700 text-slate-300 hover:border-slate-600 hover:text-white"
-                    }`}
-                  >
-                    <Lock className="w-5 h-5 mr-3" />
-                    <div className="text-left">
-                      <div className="font-medium">Mot de passe</div>
-                      <div className="text-xs opacity-75">
-                        Caractères aléatoires
-                      </div>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setOptions({ ...options, type: "passphrase" });
-                      setTimeout(generate, 100);
-                    }}
-                    className={`w-full flex items-center p-4 rounded-xl border-2 transition-all ${
-                      options.type === "passphrase"
-                        ? "border-blue-600 bg-blue-600 bg-opacity-20 text-white"
-                        : "border-slate-700 text-slate-300 hover:border-slate-600 hover:text-white"
-                    }`}
-                  >
-                    <Shield className="w-5 h-5 mr-3" />
-                    <div className="text-left">
-                      <div className="font-medium">Phrase secrète</div>
-                      <div className="text-xs opacity-75">
-                        Mots mémorisables
-                      </div>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setOptions({ ...options, type: "username" });
-                      setTimeout(generate, 100);
-                    }}
-                    className={`w-full flex items-center p-4 rounded-xl border-2 transition-all ${
-                      options.type === "username"
-                        ? "border-blue-600 bg-blue-600 bg-opacity-20 text-white"
-                        : "border-slate-700 text-slate-300 hover:border-slate-600 hover:text-white"
-                    }`}
-                  >
-                    <History className="w-5 h-5 mr-3" />
-                    <div className="text-left">
-                      <div className="font-medium">Nom d'utilisateur</div>
-                      <div className="text-xs opacity-75">
-                        Identifiant unique
-                      </div>
-                    </div>
-                  </button>
                 </div>
-              </div>
-
-              {/* Options */}
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex-1 overflow-y-auto">
-                <h3 className="text-lg font-semibold text-white mb-4">
-                  Options
-                </h3>
 
                 {options.type === "password" && (
-                  <div className="space-y-6">
+                  <div className="space-y-3">
                     <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-3">
+                      <label className="block text-xs font-medium text-slate-400 mb-2">
                         Longueur: {options.length}
                       </label>
                       <input
@@ -760,38 +528,18 @@ export default function GeneratorPage() {
                         }}
                         className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
                       />
-                      <div className="flex justify-between text-xs text-slate-400 mt-2">
-                        <span>4</span>
-                        <span>128</span>
-                      </div>
                     </div>
 
-                    <div className="space-y-3">
-                      <label className="block text-sm font-medium text-slate-300 mb-3">
-                        Caractères inclus
-                      </label>
-
+                    <div className="space-y-2">
                       {[
-                        {
-                          key: "uppercase",
-                          label: "Majuscules (A-Z)",
-                          icon: "A",
-                        },
-                        {
-                          key: "lowercase",
-                          label: "Minuscules (a-z)",
-                          icon: "a",
-                        },
-                        { key: "numbers", label: "Nombres (0-9)", icon: "9" },
-                        {
-                          key: "symbols",
-                          label: "Symboles (!@#$%^&*)",
-                          icon: "#",
-                        },
-                      ].map(({ key, label, icon }) => (
+                        { key: "uppercase", label: "Majuscules" },
+                        { key: "lowercase", label: "Minuscules" },
+                        { key: "numbers", label: "Nombres" },
+                        { key: "symbols", label: "Symboles" },
+                      ].map(({ key, label }) => (
                         <label
                           key={key}
-                          className="flex items-center space-x-3 p-3 bg-slate-800 rounded-lg cursor-pointer hover:bg-slate-700 transition-colors"
+                          className="flex items-center space-x-2 text-sm text-slate-300"
                         >
                           <input
                             type="checkbox"
@@ -805,44 +553,20 @@ export default function GeneratorPage() {
                               });
                               setTimeout(generate, 100);
                             }}
-                            className="w-4 h-4 text-blue-600 bg-slate-800 border-slate-600 rounded focus:ring-blue-500"
+                            className="w-3 h-3 text-blue-600 bg-slate-800 border-slate-600 rounded"
                           />
-                          <div className="w-8 h-8 bg-slate-700 rounded flex items-center justify-center text-sm font-mono text-slate-300">
-                            {icon}
-                          </div>
-                          <span className="text-sm text-slate-300">
-                            {label}
-                          </span>
+                          {label}
                         </label>
                       ))}
-
-                      <label className="flex items-center space-x-3 p-3 bg-slate-800 rounded-lg cursor-pointer hover:bg-slate-700 transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={options.avoidAmbiguous}
-                          onChange={(e) => {
-                            setOptions({
-                              ...options,
-                              avoidAmbiguous: e.target.checked,
-                            });
-                            setTimeout(generate, 100);
-                          }}
-                          className="w-4 h-4 text-blue-600 bg-slate-800 border-slate-600 rounded focus:ring-blue-500"
-                        />
-                        <AlertTriangle className="w-5 h-5 text-yellow-500" />
-                        <span className="text-sm text-slate-300">
-                          Éviter les caractères ambigus (0O, 1l)
-                        </span>
-                      </label>
                     </div>
                   </div>
                 )}
 
                 {options.type === "passphrase" && (
-                  <div className="space-y-6">
+                  <div className="space-y-3">
                     <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-3">
-                        Nombre de mots: {options.numWords}
+                      <label className="block text-xs font-medium text-slate-400 mb-2">
+                        Mots: {options.numWords}
                       </label>
                       <input
                         type="range"
@@ -858,14 +582,10 @@ export default function GeneratorPage() {
                         }}
                         className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
                       />
-                      <div className="flex justify-between text-xs text-slate-400 mt-2">
-                        <span>3</span>
-                        <span>10</span>
-                      </div>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-3">
+                      <label className="block text-xs font-medium text-slate-400 mb-2">
                         Séparateur
                       </label>
                       <select
@@ -877,181 +597,422 @@ export default function GeneratorPage() {
                           });
                           setTimeout(generate, 100);
                         }}
-                        className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-2 py-1 bg-slate-800 border border-slate-700 rounded text-white text-sm"
                       >
-                        <option value="-">Tiret (-)</option>
-                        <option value="_">Underscore (_)</option>
+                        <option value="-">Tiret</option>
+                        <option value="_">Underscore</option>
                         <option value=" ">Espace</option>
-                        <option value=".">Point (.)</option>
-                        <option value=",">Virgule (,)</option>
+                        <option value=".">Point</option>
                       </select>
                     </div>
-
-                    <div className="space-y-3">
-                      <label className="flex items-center space-x-3 p-3 bg-slate-800 rounded-lg cursor-pointer hover:bg-slate-700 transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={options.capitalize}
-                          onChange={(e) => {
-                            setOptions({
-                              ...options,
-                              capitalize: e.target.checked,
-                            });
-                            setTimeout(generate, 100);
-                          }}
-                          className="w-4 h-4 text-blue-600 bg-slate-800 border-slate-600 rounded focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-slate-300">
-                          Majuscule au début de chaque mot
-                        </span>
-                      </label>
-
-                      <label className="flex items-center space-x-3 p-3 bg-slate-800 rounded-lg cursor-pointer hover:bg-slate-700 transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={options.includeNumber}
-                          onChange={(e) => {
-                            setOptions({
-                              ...options,
-                              includeNumber: e.target.checked,
-                            });
-                            setTimeout(generate, 100);
-                          }}
-                          className="w-4 h-4 text-blue-600 bg-slate-800 border-slate-600 rounded focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-slate-300">
-                          Inclure un nombre à la fin
-                        </span>
-                      </label>
-                    </div>
                   </div>
                 )}
 
-                {options.type === "username" && (
-                  <div className="space-y-6">
-                    <div className="p-4 bg-slate-800 rounded-lg">
-                      <p className="text-sm text-slate-300">
-                        Les noms d'utilisateur sont générés aléatoirement en
-                        combinant des adjectifs, des noms et des nombres pour
-                        garantir l'unicité.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Security Tips */}
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                  <Zap className="w-5 h-5 mr-2 text-yellow-500" />
-                  Conseils de sécurité
-                </h3>
-                <div className="space-y-3 text-sm text-slate-400">
-                  <div className="flex items-start">
-                    <Check className="w-4 h-4 mr-2 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span>Utilisez un mot de passe unique par compte</span>
-                  </div>
-                  <div className="flex items-start">
-                    <Check className="w-4 h-4 mr-2 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span>Privilégiez les mots de passe de 16+ caractères</span>
-                  </div>
-                  <div className="flex items-start">
-                    <Check className="w-4 h-4 mr-2 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span>Activez l'authentification à deux facteurs</span>
-                  </div>
-                  <div className="flex items-start">
-                    <AlertTriangle className="w-4 h-4 mr-2 text-yellow-500 mt-0.5 flex-shrink-0" />
-                    <span>Évitez les informations personnelles</span>
-                  </div>
+                <div className="pt-4 border-t border-slate-700">
+                  <button
+                    onClick={() => setShowFavorites(!showFavorites)}
+                    className={`
+                      w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors
+                      ${
+                        showFavorites
+                          ? "bg-yellow-600 text-white"
+                          : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                      }
+                    `}
+                  >
+                    <Star className="w-4 h-4 mr-2" />
+                    Fort uniquement
+                  </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* History Modal */}
-      {showHistory && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-hidden">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-white">
-                Historique des générations
-              </h2>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={clearHistory}
-                  className="flex items-center px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Vider
-                </button>
-                <button
-                  onClick={() => setShowHistory(false)}
-                  className="p-2 text-slate-400 hover:text-white transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-shrink-0 p-4 border-b border-slate-800">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Rechercher dans l'historique..."
+                  className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
               </div>
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className="flex items-center px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors"
+              >
+                <History className="w-5 h-5 mr-2" />
+                Historique ({history.length})
+              </button>
             </div>
+          </div>
 
-            <div className="overflow-y-auto max-h-[60vh]">
-              {history.length === 0 ? (
-                <div className="text-center py-12">
-                  <Clock className="w-12 h-12 mx-auto mb-4 text-slate-600" />
-                  <p className="text-slate-400">Aucun historique disponible</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {history.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between p-4 bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3">
-                          <span className="text-xs px-2 py-1 bg-slate-700 rounded text-slate-300">
-                            {item.type === "password" && "Mot de passe"}
-                            {item.type === "passphrase" && "Phrase"}
-                            {item.type === "username" && "Username"}
-                          </span>
-                          <code className="text-sm text-white font-mono">
-                            {item.value}
-                          </code>
-                        </div>
-                        <div className="text-xs text-slate-400 mt-1">
-                          {item.timestamp.toLocaleString()}
-                          {item.strength && (
-                            <span
-                              className={`ml-2 ${
-                                item.strength >= 75
-                                  ? "text-green-500"
-                                  : item.strength >= 50
-                                    ? "text-yellow-500"
-                                    : "text-red-500"
-                              }`}
-                            >
-                              Force: {item.strength}%
-                            </span>
-                          )}
-                        </div>
-                      </div>
+          <div className="flex-1 overflow-auto">
+            <div className="p-6 space-y-6">
+              {/* Generated Output */}
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+                <div className="mb-6">
+                  <label className="block text-lg font-medium text-slate-300 mb-4">
+                    {options.type === "password" && "Mot de passe généré"}
+                    {options.type === "passphrase" && "Phrase secrète générée"}
+                    {options.type === "username" && "Nom d'utilisateur généré"}
+                  </label>
+
+                  <div className="flex items-center space-x-3">
+                    <div className="flex-1 relative">
+                      <input
+                        type={showAdvanced ? "text" : "password"}
+                        value={generatedValue}
+                        readOnly
+                        className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
                       <button
-                        onClick={async () => {
-                          await navigator.clipboard.writeText(item.value);
-                        }}
-                        className="p-2 text-slate-400 hover:text-white transition-colors"
+                        onClick={() => setShowAdvanced(!showAdvanced)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 text-slate-400 hover:text-white transition-colors"
                       >
-                        <Copy className="w-4 h-4" />
+                        {showAdvanced ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
                       </button>
                     </div>
-                  ))}
+                    <button
+                      onClick={copyToClipboard}
+                      className="flex items-center px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    >
+                      {copied ? (
+                        <Check className="w-5 h-5" />
+                      ) : (
+                        <Copy className="w-5 h-5" />
+                      )}
+                    </button>
+                    <button
+                      onClick={regenerate}
+                      className="flex items-center px-4 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors"
+                    >
+                      <RefreshCw className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Password Strength Analysis */}
+                {options.type === "password" && (
+                  <div className="space-y-4">
+                    <div className="bg-slate-800 rounded-lg p-4">
+                      <h3 className="text-sm font-semibold text-white mb-3">
+                        Analyse de force
+                      </h3>
+
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-slate-400">
+                            Force du mot de passe
+                          </span>
+                          <span
+                            className={`text-xs font-medium ${passwordStrength.color}`}
+                          >
+                            {passwordStrength.text}
+                          </span>
+                        </div>
+
+                        <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-500 ${
+                              passwordStrength.score <= 25
+                                ? "bg-red-500"
+                                : passwordStrength.score <= 50
+                                  ? "bg-orange-500"
+                                  : passwordStrength.score <= 75
+                                    ? "bg-yellow-500"
+                                    : "bg-green-500"
+                            }`}
+                            style={{ width: `${passwordStrength.score}%` }}
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                          <div>
+                            <span className="text-slate-400">
+                              Temps pour craquer:
+                            </span>
+                            <span
+                              className={`ml-1 font-medium ${passwordStrength.color}`}
+                            >
+                              {passwordStrength.timeToCrack}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400">Entropie:</span>
+                            <span
+                              className={`ml-1 font-medium ${passwordStrength.color}`}
+                            >
+                              {passwordStrength.entropy.toFixed(1)} bits
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Character Analysis */}
+                    <div className="bg-slate-800 rounded-lg p-4">
+                      <h3 className="text-sm font-semibold text-white mb-3">
+                        Composition
+                      </h3>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="flex items-center justify-between p-2 bg-slate-700 rounded">
+                          <span className="text-slate-300">Longueur</span>
+                          <span className="text-white font-medium">
+                            {generatedValue.length}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between p-2 bg-slate-700 rounded">
+                          <span className="text-slate-300">Majuscules</span>
+                          <span className="text-white font-medium">
+                            {(generatedValue.match(/[A-Z]/g) || []).length}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between p-2 bg-slate-700 rounded">
+                          <span className="text-slate-300">Minuscules</span>
+                          <span className="text-white font-medium">
+                            {(generatedValue.match(/[a-z]/g) || []).length}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between p-2 bg-slate-700 rounded">
+                          <span className="text-slate-300">Nombres</span>
+                          <span className="text-white font-medium">
+                            {(generatedValue.match(/[0-9]/g) || []).length}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between p-2 bg-slate-700 rounded col-span-2">
+                          <span className="text-slate-300">Symboles</span>
+                          <span className="text-white font-medium">
+                            {
+                              (generatedValue.match(/[^a-zA-Z0-9]/g) || [])
+                                .length
+                            }
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Passphrase Info */}
+                {options.type === "passphrase" && (
+                  <div className="bg-slate-800 rounded-lg p-4">
+                    <h3 className="text-sm font-semibold text-white mb-3">
+                      Informations
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3 text-xs">
+                      <div className="flex items-center justify-between p-2 bg-slate-700 rounded">
+                        <span className="text-slate-300">Mots</span>
+                        <span className="text-white font-medium">
+                          {options.numWords}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-slate-700 rounded">
+                        <span className="text-slate-300">Caractères</span>
+                        <span className="text-white font-medium">
+                          {generatedValue.length}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-slate-700 rounded">
+                        <span className="text-slate-300">Séparateur</span>
+                        <span className="text-white font-medium">
+                          "{options.wordSeparator}"
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-slate-700 rounded">
+                        <span className="text-slate-300">Majuscules</span>
+                        <span className="text-white font-medium">
+                          {options.capitalize ? "Oui" : "Non"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Username Info */}
+                {options.type === "username" && (
+                  <div className="bg-slate-800 rounded-lg p-4">
+                    <h3 className="text-sm font-semibold text-white mb-3">
+                      Informations
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3 text-xs">
+                      <div className="flex items-center justify-between p-2 bg-slate-700 rounded">
+                        <span className="text-slate-300">Caractères</span>
+                        <span className="text-white font-medium">
+                          {generatedValue.length}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-slate-700 rounded">
+                        <span className="text-slate-300">Type</span>
+                        <span className="text-white font-medium">
+                          Aléatoire
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* History Table */}
+              {filteredHistory.length > 0 && (
+                <div className="bg-slate-900 border border-slate-800 rounded-xl">
+                  <table className="w-full">
+                    <thead className="bg-slate-800 sticky top-0">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                          Valeur
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                          Type
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                          Date
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                          Force
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800">
+                      {filteredHistory.map((item) => {
+                        const Icon = getItemIcon(item.type);
+                        return (
+                          <tr
+                            key={item.id}
+                            className="hover:bg-slate-800 transition-colors"
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <Icon className="w-5 h-5 text-slate-400 mr-3" />
+                                <div>
+                                  <div className="text-sm font-medium text-white">
+                                    {showPasswords.has(item.id)
+                                      ? item.value
+                                      : "•".repeat(item.value.length)}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-slate-300 capitalize">
+                                {item.type === "password" && "Mot de passe"}
+                                {item.type === "passphrase" && "Phrase secrète"}
+                                {item.type === "username" &&
+                                  "Nom d'utilisateur"}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-slate-300">
+                                {item.timestamp.toLocaleString()}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {item.strength ? (
+                                <div className="flex items-center">
+                                  <div className="h-2 w-16 bg-slate-700 rounded-full overflow-hidden mr-2">
+                                    <div
+                                      className={`h-full ${
+                                        item.strength >= 75
+                                          ? "bg-green-500"
+                                          : item.strength >= 50
+                                            ? "bg-yellow-500"
+                                            : "bg-red-500"
+                                      }`}
+                                      style={{ width: `${item.strength}%` }}
+                                    />
+                                  </div>
+                                  <span
+                                    className={`text-xs ${
+                                      item.strength >= 75
+                                        ? "text-green-500"
+                                        : item.strength >= 50
+                                          ? "text-yellow-500"
+                                          : "text-red-500"
+                                    }`}
+                                  >
+                                    {item.strength}%
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-sm text-slate-400">
+                                  -
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={() =>
+                                    togglePasswordVisibility(item.id)
+                                  }
+                                  className="p-1 text-slate-400 hover:text-white transition-colors"
+                                >
+                                  {showPasswords.has(item.id) ? (
+                                    <EyeOff className="w-4 h-4" />
+                                  ) : (
+                                    <Eye className="w-4 h-4" />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    await navigator.clipboard.writeText(
+                                      item.value,
+                                    );
+                                  }}
+                                  className="p-1 text-slate-400 hover:text-white transition-colors"
+                                >
+                                  <Copy className="w-4 h-4" />
+                                </button>
+                                <button className="p-1 text-slate-400 hover:text-white transition-colors">
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                                <button className="p-1 text-slate-400 hover:text-red-400 transition-colors">
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {filteredHistory.length === 0 && (
+                <div className="flex flex-col items-center justify-center text-slate-400">
+                  <Lock className="w-16 h-16 mb-4 text-slate-600" />
+                  <h3 className="text-xl font-semibold mb-2">
+                    Aucun élément trouvé
+                  </h3>
+                  <p className="text-sm mb-6">
+                    Commencez par générer votre premier mot de passe
+                  </p>
+                  <button
+                    onClick={regenerate}
+                    className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                  >
+                    <Plus className="w-5 h-5 mr-2" />
+                    Générer
+                  </button>
                 </div>
               )}
             </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

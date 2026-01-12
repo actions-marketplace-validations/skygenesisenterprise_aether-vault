@@ -15,6 +15,21 @@ import {
   ArrowRight,
   Database,
   Shield,
+  Plus,
+  Search,
+  Filter,
+  Key,
+  CreditCard,
+  User,
+  MoreVertical,
+  Star,
+  Copy,
+  Eye,
+  EyeOff,
+  Edit,
+  Trash2,
+  RefreshCw,
+  Clock,
 } from "lucide-react";
 
 interface ImportSource {
@@ -33,6 +48,15 @@ interface ImportStep {
   completed: boolean;
 }
 
+interface ImportItem {
+  id: string;
+  name: string;
+  type: string;
+  source: string;
+  status: "pending" | "success" | "failed" | "skipped";
+  timestamp: Date;
+}
+
 export default function ImportPage() {
   const [selectedSource, setSelectedSource] = useState<string>("");
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -44,6 +68,10 @@ export default function ImportPage() {
     failed: 0,
     skipped: 0,
   });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedType, setSelectedType] = useState<string>("all");
+  const [showFavorites, setShowFavorites] = useState(false);
+  const [importItems, setImportItems] = useState<ImportItem[]>([]);
 
   const importSources: ImportSource[] = [
     {
@@ -112,6 +140,14 @@ export default function ImportPage() {
     },
   ];
 
+  const itemTypes = [
+    { value: "all", label: "Tous les éléments", icon: Key },
+    { value: "login", label: "Connexions", icon: Key },
+    { value: "card", label: "Cartes", icon: CreditCard },
+    { value: "identity", label: "Identités", icon: User },
+    { value: "secureNote", label: "Notes sécurisées", icon: FileText },
+  ];
+
   const importSteps: ImportStep[] = [
     {
       id: 1,
@@ -138,7 +174,34 @@ export default function ImportPage() {
     if (file) {
       setImportFile(file);
       setImportStep(3);
+      // Generate mock import items
+      generateMockItems();
     }
+  };
+
+  const generateMockItems = () => {
+    const mockItems: ImportItem[] = [];
+    const types = ["login", "card", "identity", "secureNote"];
+    const statuses: ("pending" | "success" | "failed" | "skipped")[] = [
+      "success",
+      "failed",
+      "skipped",
+    ];
+
+    for (let i = 0; i < 20; i++) {
+      mockItems.push({
+        id: `item-${i}`,
+        name: `Élément d'importation ${i + 1}`,
+        type: types[Math.floor(Math.random() * types.length)],
+        source: selectedSource,
+        status:
+          i < 15
+            ? "success"
+            : statuses[Math.floor(Math.random() * statuses.length)],
+        timestamp: new Date(),
+      });
+    }
+    setImportItems(mockItems);
   };
 
   const handleImport = async () => {
@@ -150,11 +213,25 @@ export default function ImportPage() {
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Mock results
-    setImportResults({
+    const results = {
       successful: Math.floor(Math.random() * 50) + 10,
       failed: Math.floor(Math.random() * 5),
       skipped: Math.floor(Math.random() * 3),
-    });
+    };
+    setImportResults(results);
+
+    // Update import items status
+    setImportItems((prev) =>
+      prev.map((item) => ({
+        ...item,
+        status:
+          Math.random() > 0.2
+            ? "success"
+            : Math.random() > 0.5
+              ? "failed"
+              : "skipped",
+      })),
+    );
 
     setIsImporting(false);
     setImportComplete(true);
@@ -167,88 +244,104 @@ export default function ImportPage() {
     setIsImporting(false);
     setImportComplete(false);
     setImportResults({ successful: 0, failed: 0, skipped: 0 });
+    setImportItems([]);
   };
 
   const getSelectedSource = () => {
     return importSources.find((source) => source.id === selectedSource);
   };
 
+  const getItemIcon = (type: string) => {
+    switch (type) {
+      case "login":
+        return Key;
+      case "card":
+        return CreditCard;
+      case "identity":
+        return User;
+      case "secureNote":
+        return FileText;
+      default:
+        return Key;
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "success":
+        return CheckCircle;
+      case "failed":
+        return AlertTriangle;
+      case "skipped":
+        return AlertTriangle;
+      default:
+        return Clock;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "success":
+        return "text-green-500";
+      case "failed":
+        return "text-red-500";
+      case "skipped":
+        return "text-yellow-500";
+      default:
+        return "text-slate-400";
+    }
+  };
+
+  const filteredItems = importItems.filter((item) => {
+    const matchesSearch =
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.source.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesType = selectedType === "all" || item.type === selectedType;
+    const matchesFavorites = !showFavorites || item.status === "success";
+
+    return matchesSearch && matchesType && matchesFavorites;
+  });
+
   return (
     <div className="h-full flex flex-col">
       <div className="flex-shrink-0 p-6 border-b border-slate-800">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold text-white mb-2">
-            Importer des données
-          </h1>
-          <p className="text-slate-400">
-            Importez vos mots de passe et données depuis d'autres gestionnaires
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2">Importation</h1>
+            <p className="text-slate-400">
+              Importez vos mots de passe et données depuis d'autres
+              gestionnaires
+            </p>
+          </div>
+          <button
+            onClick={resetImport}
+            className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Nouvelle importation
+          </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto">
-        <div className="max-w-4xl mx-auto p-6">
-          {/* Progress Steps */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between">
-              {importSteps.map((step, index) => (
-                <div key={step.id} className="flex items-center flex-1">
-                  <div className="flex items-center">
-                    <div
-                      className={`
-                        w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-colors
-                        ${
-                          step.completed
-                            ? "bg-blue-600 text-white"
-                            : importStep >= step.id
-                              ? "bg-slate-700 text-white"
-                              : "bg-slate-800 text-slate-400"
-                        }
-                      `}
-                    >
-                      {step.completed ? (
-                        <CheckCircle className="w-5 h-5" />
-                      ) : (
-                        step.id
-                      )}
-                    </div>
-                    <div className="ml-3">
-                      <h3
-                        className={`text-sm font-medium ${
-                          step.completed ? "text-white" : "text-slate-400"
-                        }`}
-                      >
-                        {step.title}
-                      </h3>
-                      <p className="text-xs text-slate-500">
-                        {step.description}
-                      </p>
-                    </div>
-                  </div>
-                  {index < importSteps.length - 1 && (
-                    <div className="flex-1 mx-4">
-                      <div
-                        className={`h-px ${
-                          step.completed ? "bg-blue-600" : "bg-slate-700"
-                        }`}
-                      />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+      <div className="flex-1 flex overflow-hidden">
+        <div className="w-64 flex-shrink-0 border-r border-slate-800 overflow-y-auto">
+          <div className="p-4 space-y-6">
+            <div className="bg-slate-900 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold text-white">Sources</h3>
+                <button className="text-slate-400 hover:text-white transition-colors">
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+              </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Step 1: Select Source */}
-              {importStep === 1 && (
-                <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
-                  <h2 className="text-xl font-semibold text-white mb-4">
-                    Choisissez la source d'importation
-                  </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-2">
+                    Source d'importation
+                  </label>
+                  <div className="space-y-1">
                     {importSources.map((source) => {
                       const Icon = source.icon;
                       return (
@@ -259,321 +352,524 @@ export default function ImportPage() {
                             setImportStep(2);
                           }}
                           className={`
-                            flex items-center p-4 rounded-lg border-2 transition-all
+                            w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors
                             ${
                               selectedSource === source.id
-                                ? "border-blue-600 bg-blue-600 bg-opacity-10"
-                                : "border-slate-700 hover:border-slate-600 hover:bg-slate-800"
+                                ? "bg-blue-600 text-white"
+                                : "text-slate-300 hover:bg-slate-800 hover:text-white"
                             }
                           `}
                         >
-                          <Icon className={`w-6 h-6 mr-3 ${source.color}`} />
-                          <div className="text-left">
-                            <div className="text-sm font-medium text-white">
-                              {source.name}
-                            </div>
-                            <div className="text-xs text-slate-400">
-                              {source.formats.join(", ")}
-                            </div>
-                          </div>
+                          <Icon
+                            className={`w-4 h-4 mr-2 ${selectedSource === source.id ? "text-white" : source.color}`}
+                          />
+                          {source.name}
                         </button>
                       );
                     })}
                   </div>
                 </div>
-              )}
 
-              {/* Step 2: Upload File */}
-              {importStep === 2 && selectedSource && (
-                <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
-                  <h2 className="text-xl font-semibold text-white mb-4">
-                    Téléchargez votre fichier
-                  </h2>
-
-                  <div className="mb-4">
-                    <div className="flex items-center p-3 bg-slate-800 rounded-lg">
-                      {(() => {
-                        const Icon = getSelectedSource()?.icon || FileText;
-                        const color =
-                          getSelectedSource()?.color || "text-slate-500";
-                        return (
-                          <>
-                            <Icon className={`w-5 h-5 mr-3 ${color}`} />
-                            <div>
-                              <div className="text-sm font-medium text-white">
-                                {getSelectedSource()?.name}
-                              </div>
-                              <div className="text-xs text-slate-400">
-                                Formats supportés:{" "}
-                                {getSelectedSource()?.formats.join(", ")}
-                              </div>
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </div>
-
-                  <div className="border-2 border-dashed border-slate-700 rounded-lg p-8 text-center hover:border-slate-600 transition-colors">
-                    <Upload className="w-12 h-12 mx-auto mb-4 text-slate-400" />
-                    <label className="cursor-pointer">
-                      <span className="text-sm text-slate-300 mb-2 block">
-                        Cliquez pour sélectionner un fichier ou glissez-déposez
-                      </span>
-                      <span className="text-xs text-slate-500">
-                        Taille maximale: 50 MB
-                      </span>
-                      <input
-                        type="file"
-                        accept={getSelectedSource()?.formats.join(",")}
-                        onChange={handleFileUpload}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-
-                  {importFile && (
-                    <div className="mt-4 p-3 bg-slate-800 rounded-lg flex items-center justify-between">
-                      <div className="flex items-center">
-                        <FileText className="w-5 h-5 mr-3 text-blue-500" />
-                        <div>
-                          <div className="text-sm font-medium text-white">
-                            {importFile.name}
-                          </div>
-                          <div className="text-xs text-slate-400">
-                            {(importFile.size / 1024 / 1024).toFixed(2)} MB
-                          </div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setImportFile(null)}
-                        className="p-1 text-slate-400 hover:text-red-400 transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
-
-                  <div className="mt-6 flex gap-3">
-                    <button
-                      onClick={() => setImportStep(1)}
-                      className="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors"
-                    >
-                      Retour
-                    </button>
-                    <button
-                      onClick={() => setImportStep(3)}
-                      disabled={!importFile}
-                      className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition-colors"
-                    >
-                      Continuer
-                    </button>
+                <div className="pt-4 border-t border-slate-700">
+                  <label className="block text-xs font-medium text-slate-400 mb-2">
+                    Type d'éléments
+                  </label>
+                  <div className="space-y-1">
+                    {itemTypes.map((type) => {
+                      const Icon = type.icon;
+                      return (
+                        <button
+                          key={type.value}
+                          onClick={() => setSelectedType(type.value)}
+                          className={`
+                            w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors
+                            ${
+                              selectedType === type.value
+                                ? "bg-blue-600 text-white"
+                                : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                            }
+                          `}
+                        >
+                          <Icon className="w-4 h-4 mr-2" />
+                          {type.label}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-              )}
 
-              {/* Step 3: Review and Import */}
-              {importStep === 3 && selectedSource && importFile && (
-                <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
-                  <h2 className="text-xl font-semibold text-white mb-4">
-                    Vérifiez et importez
-                  </h2>
-
-                  <div className="space-y-4 mb-6">
-                    <div className="p-4 bg-slate-800 rounded-lg">
-                      <h3 className="text-sm font-medium text-white mb-3">
-                        Détails de l'importation
-                      </h3>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Source:</span>
-                          <span className="text-white">
-                            {getSelectedSource()?.name}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Fichier:</span>
-                          <span className="text-white">{importFile.name}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Taille:</span>
-                          <span className="text-white">
-                            {(importFile.size / 1024 / 1024).toFixed(2)} MB
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-4 bg-blue-900 bg-opacity-20 border border-blue-800 rounded-lg">
-                      <div className="flex items-start">
-                        <Info className="w-5 h-5 mr-3 text-blue-500 mt-0.5 flex-shrink-0" />
-                        <div className="text-sm text-slate-300">
-                          <p className="font-medium text-white mb-1">
-                            Important:
-                          </p>
-                          <ul className="list-disc list-inside space-y-1 text-slate-400">
-                            <li>
-                              L'importation créera de nouveaux éléments dans
-                              votre coffre
-                            </li>
-                            <li>
-                              Les éléments existants avec les mêmes informations
-                              ne seront pas remplacés
-                            </li>
-                            <li>
-                              Les pièces jointes de fichiers ne sont pas
-                              importées
-                            </li>
-                            <li>Les Sends doivent être recréés manuellement</li>
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {!importComplete ? (
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => setImportStep(2)}
-                        className="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors"
-                      >
-                        Retour
-                      </button>
-                      <button
-                        onClick={handleImport}
-                        disabled={isImporting}
-                        className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition-colors"
-                      >
-                        {isImporting ? (
-                          <div className="flex items-center justify-center">
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                            Importation...
-                          </div>
-                        ) : (
-                          "Importer les données"
-                        )}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="p-4 bg-green-900 bg-opacity-20 border border-green-800 rounded-lg">
-                        <div className="flex items-center">
-                          <CheckCircle className="w-5 h-5 mr-3 text-green-500" />
-                          <div>
-                            <p className="text-sm font-medium text-white">
-                              Importation terminée!
-                            </p>
-                            <p className="text-xs text-slate-400">
-                              Vos données ont été importées avec succès
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="text-center p-3 bg-slate-800 rounded-lg">
-                          <div className="text-2xl font-bold text-green-500">
-                            {importResults.successful}
-                          </div>
-                          <div className="text-xs text-slate-400">Réussis</div>
-                        </div>
-                        <div className="text-center p-3 bg-slate-800 rounded-lg">
-                          <div className="text-2xl font-bold text-red-500">
-                            {importResults.failed}
-                          </div>
-                          <div className="text-xs text-slate-400">Échoués</div>
-                        </div>
-                        <div className="text-center p-3 bg-slate-800 rounded-lg">
-                          <div className="text-2xl font-bold text-yellow-500">
-                            {importResults.skipped}
-                          </div>
-                          <div className="text-xs text-slate-400">Ignorés</div>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={resetImport}
-                        className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                      >
-                        Nouvelle importation
-                      </button>
-                    </div>
-                  )}
+                <div className="pt-4 border-t border-slate-700">
+                  <button
+                    onClick={() => setShowFavorites(!showFavorites)}
+                    className={`
+                      w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors
+                      ${
+                        showFavorites
+                          ? "bg-yellow-600 text-white"
+                          : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                      }
+                    `}
+                  >
+                    <Star className="w-4 h-4 mr-2" />
+                    Réussis uniquement
+                  </button>
                 </div>
-              )}
+              </div>
             </div>
 
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Help */}
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                  <Info className="w-5 h-5 mr-2 text-blue-500" />
-                  Aide
+            {/* Import Progress */}
+            {selectedSource && (
+              <div className="bg-slate-900 rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-white mb-4">
+                  Progression
                 </h3>
-                <div className="space-y-3 text-sm text-slate-400">
-                  <p>
-                    Avant d'importer, exportez vos données depuis votre
-                    gestionnaire de mots de passe actuel.
-                  </p>
-                  <p>
-                    Assurez-vous que le fichier est dans un format supporté et
-                    n'est pas protégé par un mot de passe.
-                  </p>
-                  <p>
-                    L'importation peut prendre quelques minutes selon la taille
-                    de votre fichier.
-                  </p>
+                <div className="space-y-3">
+                  {importSteps.map((step) => (
+                    <div key={step.id} className="flex items-center">
+                      <div
+                        className={`
+                          w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium mr-3
+                          ${
+                            step.completed
+                              ? "bg-green-600 text-white"
+                              : importStep >= step.id
+                                ? "bg-slate-700 text-white"
+                                : "bg-slate-800 text-slate-400"
+                          }
+                        `}
+                      >
+                        {step.completed ? (
+                          <CheckCircle className="w-3 h-3" />
+                        ) : (
+                          step.id
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div
+                          className={`text-xs font-medium ${step.completed ? "text-white" : "text-slate-400"}`}
+                        >
+                          {step.title}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
+            )}
+          </div>
+        </div>
 
-              {/* Supported Formats */}
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                  <FileText className="w-5 h-5 mr-2 text-green-500" />
-                  Formats supportés
-                </h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400">CSV</span>
-                    <span className="text-green-500">✓</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400">JSON</span>
-                    <span className="text-green-500">✓</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400">XML</span>
-                    <span className="text-green-500">✓</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400">1pif</span>
-                    <span className="text-green-500">✓</span>
-                  </div>
-                </div>
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-shrink-0 p-4 border-b border-slate-800">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Rechercher dans les éléments importés..."
+                  className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
               </div>
+              <button className="flex items-center px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors">
+                <Filter className="w-5 h-5 mr-2" />
+                Filtres
+              </button>
+            </div>
+          </div>
 
-              {/* Tips */}
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                  <AlertTriangle className="w-5 h-5 mr-2 text-yellow-500" />
-                  Conseils
-                </h3>
-                <div className="space-y-3 text-sm text-slate-400">
-                  <div className="flex items-start">
-                    <ArrowRight className="w-4 h-4 mr-2 mt-0.5 text-blue-500 flex-shrink-0" />
-                    <span>Sauvegardez votre coffre avant d'importer</span>
-                  </div>
-                  <div className="flex items-start">
-                    <ArrowRight className="w-4 h-4 mr-2 mt-0.5 text-blue-500 flex-shrink-0" />
-                    <span>Vérifiez les données après l'importation</span>
-                  </div>
-                  <div className="flex items-start">
-                    <ArrowRight className="w-4 h-4 mr-2 mt-0.5 text-blue-500 flex-shrink-0" />
-                    <span>Supprimez l'ancien coffre après vérification</span>
+          <div className="flex-1 overflow-auto">
+            <div className="p-6 space-y-6">
+              {/* Import Steps Content */}
+              {!importComplete && (
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+                  {/* Step 1: Select Source */}
+                  {importStep === 1 && (
+                    <div>
+                      <h2 className="text-xl font-semibold text-white mb-4">
+                        Choisissez la source d'importation
+                      </h2>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {importSources.map((source) => {
+                          const Icon = source.icon;
+                          return (
+                            <button
+                              key={source.id}
+                              onClick={() => {
+                                setSelectedSource(source.id);
+                                setImportStep(2);
+                              }}
+                              className={`
+                                flex items-center p-4 rounded-lg border-2 transition-all
+                                ${
+                                  selectedSource === source.id
+                                    ? "border-blue-600 bg-blue-600 bg-opacity-10"
+                                    : "border-slate-700 hover:border-slate-600 hover:bg-slate-800"
+                                }
+                              `}
+                            >
+                              <Icon
+                                className={`w-6 h-6 mr-3 ${source.color}`}
+                              />
+                              <div className="text-left">
+                                <div className="text-sm font-medium text-white">
+                                  {source.name}
+                                </div>
+                                <div className="text-xs text-slate-400">
+                                  {source.formats.join(", ")}
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 2: Upload File */}
+                  {importStep === 2 && selectedSource && (
+                    <div>
+                      <h2 className="text-xl font-semibold text-white mb-4">
+                        Téléchargez votre fichier
+                      </h2>
+
+                      <div className="mb-4">
+                        <div className="flex items-center p-3 bg-slate-800 rounded-lg">
+                          {(() => {
+                            const Icon = getSelectedSource()?.icon || FileText;
+                            const color =
+                              getSelectedSource()?.color || "text-slate-500";
+                            return (
+                              <>
+                                <Icon className={`w-5 h-5 mr-3 ${color}`} />
+                                <div>
+                                  <div className="text-sm font-medium text-white">
+                                    {getSelectedSource()?.name}
+                                  </div>
+                                  <div className="text-xs text-slate-400">
+                                    Formats supportés:{" "}
+                                    {getSelectedSource()?.formats.join(", ")}
+                                  </div>
+                                </div>
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
+
+                      <div className="border-2 border-dashed border-slate-700 rounded-lg p-8 text-center hover:border-slate-600 transition-colors">
+                        <Upload className="w-12 h-12 mx-auto mb-4 text-slate-400" />
+                        <label className="cursor-pointer">
+                          <span className="text-sm text-slate-300 mb-2 block">
+                            Cliquez pour sélectionner un fichier ou
+                            glissez-déposez
+                          </span>
+                          <span className="text-xs text-slate-500">
+                            Taille maximale: 50 MB
+                          </span>
+                          <input
+                            type="file"
+                            accept={getSelectedSource()?.formats.join(",")}
+                            onChange={handleFileUpload}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+
+                      {importFile && (
+                        <div className="mt-4 p-3 bg-slate-800 rounded-lg flex items-center justify-between">
+                          <div className="flex items-center">
+                            <FileText className="w-5 h-5 mr-3 text-blue-500" />
+                            <div>
+                              <div className="text-sm font-medium text-white">
+                                {importFile.name}
+                              </div>
+                              <div className="text-xs text-slate-400">
+                                {(importFile.size / 1024 / 1024).toFixed(2)} MB
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => setImportFile(null)}
+                            className="p-1 text-slate-400 hover:text-red-400 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="mt-6 flex gap-3">
+                        <button
+                          onClick={() => setImportStep(1)}
+                          className="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors"
+                        >
+                          Retour
+                        </button>
+                        <button
+                          onClick={() => setImportStep(3)}
+                          disabled={!importFile}
+                          className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition-colors"
+                        >
+                          Continuer
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 3: Review and Import */}
+                  {importStep === 3 && selectedSource && importFile && (
+                    <div>
+                      <h2 className="text-xl font-semibold text-white mb-4">
+                        Vérifiez et importez
+                      </h2>
+
+                      <div className="space-y-4 mb-6">
+                        <div className="p-4 bg-slate-800 rounded-lg">
+                          <h3 className="text-sm font-medium text-white mb-3">
+                            Détails de l'importation
+                          </h3>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">Source:</span>
+                              <span className="text-white">
+                                {getSelectedSource()?.name}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">Fichier:</span>
+                              <span className="text-white">
+                                {importFile.name}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">Taille:</span>
+                              <span className="text-white">
+                                {(importFile.size / 1024 / 1024).toFixed(2)} MB
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="p-4 bg-blue-900 bg-opacity-20 border border-blue-800 rounded-lg">
+                          <div className="flex items-start">
+                            <Info className="w-5 h-5 mr-3 text-blue-500 mt-0.5 flex-shrink-0" />
+                            <div className="text-sm text-slate-300">
+                              <p className="font-medium text-white mb-1">
+                                Important:
+                              </p>
+                              <ul className="list-disc list-inside space-y-1 text-slate-400">
+                                <li>
+                                  L'importation créera de nouveaux éléments dans
+                                  votre coffre
+                                </li>
+                                <li>
+                                  Les éléments existants avec les mêmes
+                                  informations ne seront pas remplacés
+                                </li>
+                                <li>
+                                  Les pièces jointes de fichiers ne sont pas
+                                  importées
+                                </li>
+                                <li>
+                                  Les Sends doivent être recréés manuellement
+                                </li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => setImportStep(2)}
+                          className="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors"
+                        >
+                          Retour
+                        </button>
+                        <button
+                          onClick={handleImport}
+                          disabled={isImporting}
+                          className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition-colors"
+                        >
+                          {isImporting ? (
+                            <div className="flex items-center justify-center">
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                              Importation...
+                            </div>
+                          ) : (
+                            "Importer les données"
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Import Results */}
+              {importComplete && (
+                <div className="space-y-6">
+                  <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+                    <h2 className="text-xl font-semibold text-white mb-4">
+                      Résultats de l'importation
+                    </h2>
+
+                    <div className="grid grid-cols-3 gap-4 mb-6">
+                      <div className="text-center p-4 bg-slate-800 rounded-lg">
+                        <div className="text-2xl font-bold text-green-500">
+                          {importResults.successful}
+                        </div>
+                        <div className="text-xs text-slate-400">Réussis</div>
+                      </div>
+                      <div className="text-center p-4 bg-slate-800 rounded-lg">
+                        <div className="text-2xl font-bold text-red-500">
+                          {importResults.failed}
+                        </div>
+                        <div className="text-xs text-slate-400">Échoués</div>
+                      </div>
+                      <div className="text-center p-4 bg-slate-800 rounded-lg">
+                        <div className="text-2xl font-bold text-yellow-500">
+                          {importResults.skipped}
+                        </div>
+                        <div className="text-xs text-slate-400">Ignorés</div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-green-900 bg-opacity-20 border border-green-800 rounded-lg">
+                      <div className="flex items-center">
+                        <CheckCircle className="w-5 h-5 mr-3 text-green-500" />
+                        <div>
+                          <p className="text-sm font-medium text-white">
+                            Importation terminée!
+                          </p>
+                          <p className="text-xs text-slate-400">
+                            Vos données ont été importées avec succès
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
+
+              {/* Import Items Table */}
+              {importItems.length > 0 && (
+                <div className="bg-slate-900 border border-slate-800 rounded-xl">
+                  <table className="w-full">
+                    <thead className="bg-slate-800 sticky top-0">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                          Nom
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                          Type
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                          Source
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                          Statut
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800">
+                      {filteredItems.map((item) => {
+                        const ItemIcon = getItemIcon(item.type);
+                        const StatusIcon = getStatusIcon(item.status);
+                        return (
+                          <tr
+                            key={item.id}
+                            className="hover:bg-slate-800 transition-colors"
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <ItemIcon className="w-5 h-5 text-slate-400 mr-3" />
+                                <div>
+                                  <div className="text-sm font-medium text-white">
+                                    {item.name}
+                                  </div>
+                                  <div className="text-xs text-slate-400 capitalize">
+                                    {item.type}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-slate-300 capitalize">
+                                {item.type === "login" && "Connexion"}
+                                {item.type === "card" && "Carte"}
+                                {item.type === "identity" && "Identité"}
+                                {item.type === "secureNote" && "Note sécurisée"}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-slate-300">
+                                {importSources.find((s) => s.id === item.source)
+                                  ?.name || item.source}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <StatusIcon
+                                  className={`w-4 h-4 mr-2 ${getStatusColor(item.status)}`}
+                                />
+                                <span
+                                  className={`text-sm ${getStatusColor(item.status)}`}
+                                >
+                                  {item.status === "success" && "Réussi"}
+                                  {item.status === "failed" && "Échoué"}
+                                  {item.status === "skipped" && "Ignoré"}
+                                  {item.status === "pending" && "En attente"}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center space-x-2">
+                                <button className="p-1 text-slate-400 hover:text-white transition-colors">
+                                  <Copy className="w-4 h-4" />
+                                </button>
+                                <button className="p-1 text-slate-400 hover:text-white transition-colors">
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                                <button className="p-1 text-slate-400 hover:text-white transition-colors">
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                                <button className="p-1 text-slate-400 hover:text-red-400 transition-colors">
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Empty State */}
+              {importItems.length === 0 && !importComplete && (
+                <div className="flex flex-col items-center justify-center text-slate-400">
+                  <Upload className="w-16 h-16 mb-4 text-slate-600" />
+                  <h3 className="text-xl font-semibold mb-2">
+                    Aucun élément à afficher
+                  </h3>
+                  <p className="text-sm mb-6">
+                    Commencez par sélectionner une source et importer un fichier
+                  </p>
+                  <button
+                    onClick={() => setImportStep(1)}
+                    className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                  >
+                    <Plus className="w-5 h-5 mr-2" />
+                    Commencer l'importation
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

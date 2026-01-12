@@ -20,6 +20,14 @@ import {
   CreditCard,
   User,
   Folder,
+  Plus,
+  Search,
+  Filter,
+  MoreVertical,
+  Star,
+  Edit,
+  Trash2,
+  RefreshCw,
 } from "lucide-react";
 
 interface ExportFormat {
@@ -41,6 +49,18 @@ interface ExportOptions {
   password?: string;
 }
 
+interface VaultItem {
+  id: string;
+  type: "login" | "card" | "identity" | "secureNote";
+  name: string;
+  username?: string;
+  url?: string;
+  favorite: boolean;
+  folder?: string;
+  lastModified: Date;
+  selected: boolean;
+}
+
 export default function ExportPage() {
   const [selectedFormat, setSelectedFormat] = useState<string>("json");
   const [exportOptions, setExportOptions] = useState<ExportOptions>({
@@ -55,6 +75,10 @@ export default function ExportPage() {
   const [isExporting, setIsExporting] = useState(false);
   const [exportComplete, setExportComplete] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedType, setSelectedType] = useState<string>("all");
+  const [showFavorites, setShowFavorites] = useState(false);
+  const [selectAll, setSelectAll] = useState(false);
 
   const exportFormats: ExportFormat[] = [
     {
@@ -108,37 +132,70 @@ export default function ExportPage() {
     },
   ];
 
+  const mockVaultItems: VaultItem[] = [
+    {
+      id: "1",
+      type: "login",
+      name: "Google",
+      username: "user@gmail.com",
+      url: "https://accounts.google.com",
+      favorite: true,
+      folder: "Personnel",
+      lastModified: new Date(),
+      selected: true,
+    },
+    {
+      id: "2",
+      type: "card",
+      name: "Carte Visa",
+      favorite: false,
+      folder: "Finance",
+      lastModified: new Date(),
+      selected: true,
+    },
+    {
+      id: "3",
+      type: "identity",
+      name: "John Doe",
+      favorite: false,
+      folder: "Personnel",
+      lastModified: new Date(),
+      selected: false,
+    },
+    {
+      id: "4",
+      type: "secureNote",
+      name: "Note importante",
+      favorite: false,
+      folder: "Travail",
+      lastModified: new Date(),
+      selected: true,
+    },
+    {
+      id: "5",
+      type: "login",
+      name: "GitHub",
+      username: "johndoe",
+      url: "https://github.com",
+      favorite: true,
+      folder: "Développement",
+      lastModified: new Date(),
+      selected: true,
+    },
+  ];
+
+  const [vaultItems, setVaultItems] = useState<VaultItem[]>(mockVaultItems);
+
+  const itemTypes = [
+    { value: "all", label: "Tous les éléments", icon: Key },
+    { value: "login", label: "Connexions", icon: Key },
+    { value: "card", label: "Cartes", icon: CreditCard },
+    { value: "identity", label: "Identités", icon: User },
+    { value: "secureNote", label: "Notes sécurisées", icon: FileText },
+  ];
+
   const mockVaultData = {
-    items: [
-      {
-        id: "1",
-        type: "login",
-        name: "Google",
-        username: "user@gmail.com",
-        password: "••••••••",
-        url: "https://accounts.google.com",
-        notes: "Compte principal",
-        folder: "Personnel",
-        favorite: true,
-      },
-      {
-        id: "2",
-        type: "card",
-        name: "Carte Visa",
-        cardNumber: "•••• •••• •••• 1234",
-        cardholderName: "John Doe",
-        expMonth: "12",
-        expYear: "2025",
-        cvv: "•••",
-        brand: "Visa",
-      },
-      {
-        id: "3",
-        type: "note",
-        name: "Note importante",
-        notes: "Informations sensibles à conserver",
-      },
-    ],
+    items: vaultItems.filter((item) => item.selected),
     folders: [
       { id: "1", name: "Personnel" },
       { id: "2", name: "Travail" },
@@ -169,8 +226,15 @@ export default function ExportPage() {
       filename = `aether-vault-export-${new Date().toISOString().split("T")[0]}.json`;
       mimeType = "application/json";
     } else if (selectedFormat === "csv") {
+      const selectedItems = vaultItems.filter((item) => item.selected);
       exportData =
-        "name,username,password,url,notes\nGoogle,user@gmail.com,••••••••,https://accounts.google.com,Compte principal";
+        "name,username,password,url,notes\n" +
+        selectedItems
+          .map(
+            (item) =>
+              `${item.name},${item.username || ""},••••••••,${item.url || ""},""`,
+          )
+          .join("\n");
       filename = `aether-vault-export-${new Date().toISOString().split("T")[0]}.csv`;
       mimeType = "text/csv";
     } else if (selectedFormat === "encrypted-json") {
@@ -203,344 +267,460 @@ export default function ExportPage() {
   };
 
   const getPreviewData = () => {
+    const selectedItems = vaultItems.filter((item) => item.selected);
     if (selectedFormat === "json") {
-      return JSON.stringify(mockVaultData, null, 2).substring(0, 500) + "...";
+      return (
+        JSON.stringify({ items: selectedItems }, null, 2).substring(0, 500) +
+        "..."
+      );
     } else if (selectedFormat === "csv") {
-      return "name,username,password,url,notes\nGoogle,user@gmail.com,••••••••,https://accounts.google.com,Compte principal\n...";
+      return (
+        "name,username,password,url,notes\n" +
+        selectedItems
+          .slice(0, 3)
+          .map(
+            (item) =>
+              `${item.name},${item.username || ""},••••••••,${item.url || ""},""`,
+          )
+          .join("\n") +
+        "\n..."
+      );
     }
     return "Aperçu non disponible pour ce format";
   };
 
+  const getItemIcon = (type: string) => {
+    switch (type) {
+      case "login":
+        return Key;
+      case "card":
+        return CreditCard;
+      case "identity":
+        return User;
+      case "secureNote":
+        return FileText;
+      default:
+        return Key;
+    }
+  };
+
+  const toggleItemSelection = (itemId: string) => {
+    setVaultItems((prev) =>
+      prev.map((item) =>
+        item.id === itemId ? { ...item, selected: !item.selected } : item,
+      ),
+    );
+  };
+
+  const toggleAllSelection = () => {
+    const newSelectAll = !selectAll;
+    setSelectAll(newSelectAll);
+    setVaultItems((prev) =>
+      prev.map((item) => ({ ...item, selected: newSelectAll })),
+    );
+  };
+
+  const filteredItems = vaultItems.filter((item) => {
+    const matchesSearch =
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.url?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesType = selectedType === "all" || item.type === selectedType;
+    const matchesFavorites = !showFavorites || item.favorite;
+
+    return matchesSearch && matchesType && matchesFavorites;
+  });
+
+  const selectedCount = vaultItems.filter((item) => item.selected).length;
+
   return (
     <div className="h-full flex flex-col">
       <div className="flex-shrink-0 p-6 border-b border-slate-800">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold text-white mb-2">
-            Exporter des données
-          </h1>
-          <p className="text-slate-400">
-            Exportez votre coffre vers différents formats
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2">Exportation</h1>
+            <p className="text-slate-400">
+              Exportez votre coffre vers différents formats
+            </p>
+          </div>
+          <button
+            onClick={handleExport}
+            disabled={selectedCount === 0 || isExporting}
+            className="flex items-center px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded-lg transition-colors"
+          >
+            {isExporting ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                Exportation...
+              </>
+            ) : (
+              <>
+                <Download className="w-5 h-5 mr-2" />
+                Exporter ({selectedCount})
+              </>
+            )}
+          </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto">
-        <div className="max-w-4xl mx-auto p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Format Selection */}
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
-                <h2 className="text-xl font-semibold text-white mb-4">
-                  Choisissez le format d'exportation
-                </h2>
-                <div className="space-y-3">
-                  {exportFormats.map((format) => {
-                    const Icon = format.icon;
-                    return (
-                      <button
-                        key={format.id}
-                        onClick={() => setSelectedFormat(format.id)}
-                        className={`
-                          w-full flex items-center p-4 rounded-lg border-2 transition-all
-                          ${
-                            selectedFormat === format.id
-                              ? "border-blue-600 bg-blue-600 bg-opacity-10"
-                              : "border-slate-700 hover:border-slate-600 hover:bg-slate-800"
-                          }
-                        `}
-                      >
-                        <div className="flex items-center flex-1">
-                          <Icon
-                            className={`w-6 h-6 mr-3 ${
-                              format.encrypted
-                                ? "text-green-500"
-                                : "text-blue-500"
-                            }`}
-                          />
-                          <div className="text-left flex-1">
-                            <div className="flex items-center justify-between">
-                              <div className="text-sm font-medium text-white">
-                                {format.name}
-                              </div>
-                              {format.encrypted && (
-                                <div className="flex items-center text-xs text-green-500">
-                                  <Lock className="w-3 h-3 mr-1" />
-                                  Chiffré
-                                </div>
-                              )}
-                            </div>
-                            <div className="text-xs text-slate-400 mt-1">
-                              {format.description}
-                            </div>
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {format.features.map((feature, index) => (
-                                <span
-                                  key={index}
-                                  className="px-2 py-1 bg-slate-800 text-xs text-slate-300 rounded"
-                                >
-                                  {feature}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+      <div className="flex-1 flex overflow-hidden">
+        <div className="w-64 flex-shrink-0 border-r border-slate-800 overflow-y-auto">
+          <div className="p-4 space-y-6">
+            <div className="bg-slate-900 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold text-white">Formats</h3>
+                <button className="text-slate-400 hover:text-white transition-colors">
+                  <RefreshCw className="w-4 h-4" />
+                </button>
               </div>
 
-              {/* Export Options */}
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
-                <h2 className="text-xl font-semibold text-white mb-4">
-                  Options d'exportation
-                </h2>
-                <div className="space-y-4">
-                  <div className="space-y-3">
-                    <label className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        checked={exportOptions.includeFolders}
-                        onChange={(e) =>
-                          setExportOptions({
-                            ...exportOptions,
-                            includeFolders: e.target.checked,
-                          })
-                        }
-                        className="w-4 h-4 text-blue-600 bg-slate-800 border-slate-600 rounded focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-slate-300">
-                        Inclure les dossiers
-                      </span>
-                    </label>
-
-                    <label className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        checked={exportOptions.includeAttachments}
-                        onChange={(e) =>
-                          setExportOptions({
-                            ...exportOptions,
-                            includeAttachments: e.target.checked,
-                          })
-                        }
-                        className="w-4 h-4 text-blue-600 bg-slate-800 border-slate-600 rounded focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-slate-300">
-                        Inclure les pièces jointes
-                      </span>
-                    </label>
-
-                    <label className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        checked={exportOptions.includeOrganizations}
-                        onChange={(e) =>
-                          setExportOptions({
-                            ...exportOptions,
-                            includeOrganizations: e.target.checked,
-                          })
-                        }
-                        className="w-4 h-4 text-blue-600 bg-slate-800 border-slate-600 rounded focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-slate-300">
-                        Inclure les organisations
-                      </span>
-                    </label>
-
-                    <label className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        checked={exportOptions.includeSends}
-                        onChange={(e) =>
-                          setExportOptions({
-                            ...exportOptions,
-                            includeSends: e.target.checked,
-                          })
-                        }
-                        className="w-4 h-4 text-blue-600 bg-slate-800 border-slate-600 rounded focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-slate-300">
-                        Inclure les Sends
-                      </span>
-                    </label>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-2">
+                    Format d'exportation
+                  </label>
+                  <div className="space-y-1">
+                    {exportFormats.map((format) => {
+                      const Icon = format.icon;
+                      return (
+                        <button
+                          key={format.id}
+                          onClick={() => setSelectedFormat(format.id)}
+                          className={`
+                            w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors
+                            ${
+                              selectedFormat === format.id
+                                ? "bg-slate-700 text-white border border-slate-600"
+                                : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                            }
+                          `}
+                        >
+                          <Icon
+                            className={`w-4 h-4 mr-2 ${selectedFormat === format.id ? "text-white" : format.encrypted ? "text-green-500" : "text-blue-500"}`}
+                          />
+                          <div className="flex-1 text-left">
+                            <div>{format.name}</div>
+                            {format.encrypted && (
+                              <div className="text-xs opacity-75">Chiffré</div>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-              </div>
 
-              {/* Export Actions */}
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
-                <div className="space-y-4">
-                  {!exportComplete ? (
-                    <>
-                      <div className="flex gap-3">
+                <div className="pt-4 border-t border-slate-700">
+                  <label className="block text-xs font-medium text-slate-400 mb-2">
+                    Type d'éléments
+                  </label>
+                  <div className="space-y-1">
+                    {itemTypes.map((type) => {
+                      const Icon = type.icon;
+                      return (
                         <button
-                          onClick={() => setShowPreview(!showPreview)}
-                          className="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors"
+                          key={type.value}
+                          onClick={() => setSelectedType(type.value)}
+                          className={`
+                            w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors
+                            ${
+                              selectedType === type.value
+                                ? "bg-blue-600 text-white"
+                                : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                            }
+                          `}
                         >
-                          <Eye className="w-4 h-4 inline mr-2" />
-                          Aperçu
+                          <Icon className="w-4 h-4 mr-2" />
+                          {type.label}
                         </button>
-                        <button
-                          onClick={handleExport}
-                          disabled={isExporting}
-                          className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition-colors"
-                        >
-                          {isExporting ? (
-                            <div className="flex items-center justify-center">
-                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                              Exportation...
-                            </div>
-                          ) : (
-                            <>
-                              <Download className="w-4 h-4 inline mr-2" />
-                              Exporter
-                            </>
-                          )}
-                        </button>
-                      </div>
+                      );
+                    })}
+                  </div>
+                </div>
 
-                      {showPreview && (
-                        <div className="mt-4">
-                          <div className="p-4 bg-slate-800 rounded-lg">
-                            <h4 className="text-sm font-medium text-white mb-2">
-                              Aperçu:
-                            </h4>
-                            <pre className="text-xs text-slate-400 font-mono overflow-x-auto">
-                              {getPreviewData()}
-                            </pre>
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="p-4 bg-green-900 bg-opacity-20 border border-green-800 rounded-lg">
-                        <div className="flex items-center">
-                          <CheckCircle className="w-5 h-5 mr-3 text-green-500" />
-                          <div>
-                            <p className="text-sm font-medium text-white">
-                              Exportation terminée!
-                            </p>
-                            <p className="text-xs text-slate-400">
-                              Votre fichier a été téléchargé avec succès
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => {
-                          setExportComplete(false);
-                          setShowPreview(false);
-                        }}
-                        className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                      >
-                        Nouvelle exportation
-                      </button>
-                    </div>
-                  )}
+                <div className="pt-4 border-t border-slate-700">
+                  <button
+                    onClick={() => setShowFavorites(!showFavorites)}
+                    className={`
+                      w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors
+                      ${
+                        showFavorites
+                          ? "bg-yellow-600 text-white"
+                          : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                      }
+                    `}
+                  >
+                    <Star className="w-4 h-4 mr-2" />
+                    Favoris uniquement
+                  </button>
                 </div>
               </div>
             </div>
 
-            {/* Sidebar */}
-            <div className="space-y-6">
+            {/* Export Options */}
+            <div className="bg-slate-900 rounded-lg p-4">
+              <h3 className="text-sm font-semibold text-white mb-4">Options</h3>
+              <div className="space-y-3">
+                <label className="flex items-center space-x-2 text-sm text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={exportOptions.includeFolders}
+                    onChange={(e) =>
+                      setExportOptions({
+                        ...exportOptions,
+                        includeFolders: e.target.checked,
+                      })
+                    }
+                    className="w-3 h-3 text-blue-600 bg-slate-800 border-slate-600 rounded"
+                  />
+                  Inclure les dossiers
+                </label>
+
+                <label className="flex items-center space-x-2 text-sm text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={exportOptions.includeAttachments}
+                    onChange={(e) =>
+                      setExportOptions({
+                        ...exportOptions,
+                        includeAttachments: e.target.checked,
+                      })
+                    }
+                    className="w-3 h-3 text-blue-600 bg-slate-800 border-slate-600 rounded"
+                  />
+                  Inclure les pièces jointes
+                </label>
+
+                <label className="flex items-center space-x-2 text-sm text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={exportOptions.includeOrganizations}
+                    onChange={(e) =>
+                      setExportOptions({
+                        ...exportOptions,
+                        includeOrganizations: e.target.checked,
+                      })
+                    }
+                    className="w-3 h-3 text-blue-600 bg-slate-800 border-slate-600 rounded"
+                  />
+                  Inclure les organisations
+                </label>
+
+                <label className="flex items-center space-x-2 text-sm text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={exportOptions.includeSends}
+                    onChange={(e) =>
+                      setExportOptions({
+                        ...exportOptions,
+                        includeSends: e.target.checked,
+                      })
+                    }
+                    className="w-3 h-3 text-blue-600 bg-slate-800 border-slate-600 rounded"
+                  />
+                  Inclure les Sends
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-shrink-0 p-4 border-b border-slate-800">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Rechercher dans les éléments à exporter..."
+                  className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <button className="flex items-center px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors">
+                <Filter className="w-5 h-5 mr-2" />
+                Filtres
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-auto">
+            <div className="p-6 space-y-6">
               {/* Export Summary */}
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                  <Info className="w-5 h-5 mr-2 text-blue-500" />
-                  Résumé de l'export
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-400">Format:</span>
-                    <span className="text-white">
-                      {getSelectedFormat()?.name}
-                    </span>
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+                <h2 className="text-lg font-semibold text-white mb-4">
+                  Résumé de l'exportation
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center p-3 bg-slate-800 rounded-lg">
+                    <div className="text-xl font-bold text-blue-500">
+                      {selectedCount}
+                    </div>
+                    <div className="text-xs text-slate-400">Sélectionnés</div>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-400">Extension:</span>
-                    <span className="text-white">
-                      {getSelectedFormat()?.extension}
-                    </span>
+                  <div className="text-center p-3 bg-slate-800 rounded-lg">
+                    <div className="text-xl font-bold text-white">
+                      {vaultItems.length}
+                    </div>
+                    <div className="text-xs text-slate-400">Total</div>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-400">Chiffrement:</span>
-                    <span
-                      className={
-                        getSelectedFormat()?.encrypted
-                          ? "text-green-500"
-                          : "text-slate-400"
-                      }
-                    >
+                  <div className="text-center p-3 bg-slate-800 rounded-lg">
+                    <div className="text-xl font-bold text-green-500">
+                      {getSelectedFormat()?.name.split(" ")[0]}
+                    </div>
+                    <div className="text-xs text-slate-400">Format</div>
+                  </div>
+                  <div className="text-center p-3 bg-slate-800 rounded-lg">
+                    <div className="text-xl font-bold text-purple-500">
                       {getSelectedFormat()?.encrypted ? "Oui" : "Non"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-400">Éléments:</span>
-                    <span className="text-white">
-                      {mockVaultData.items.length}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-400">Dossiers:</span>
-                    <span className="text-white">
-                      {mockVaultData.folders.length}
-                    </span>
+                    </div>
+                    <div className="text-xs text-slate-400">Chiffré</div>
                   </div>
                 </div>
               </div>
 
-              {/* Security Warning */}
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                  <AlertTriangle className="w-5 h-5 mr-2 text-yellow-500" />
-                  Sécurité
-                </h3>
-                <div className="space-y-3 text-sm text-slate-400">
-                  <p>
-                    Les fichiers d'exportation contiennent des informations
-                    sensibles.
-                  </p>
-                  <div className="space-y-2">
-                    <div className="flex items-start">
-                      <Lock className="w-4 h-4 mr-2 mt-0.5 text-red-500 flex-shrink-0" />
-                      <span>Stockez le fichier dans un endroit sécurisé</span>
-                    </div>
-                    <div className="flex items-start">
-                      <Lock className="w-4 h-4 mr-2 mt-0.5 text-red-500 flex-shrink-0" />
-                      <span>Utilisez le format chiffré si possible</span>
-                    </div>
-                    <div className="flex items-start">
-                      <Lock className="w-4 h-4 mr-2 mt-0.5 text-red-500 flex-shrink-0" />
-                      <span>Supprimez le fichier après utilisation</span>
-                    </div>
-                  </div>
-                </div>
+              {/* Items Table */}
+              <div className="bg-slate-900 border border-slate-800 rounded-xl">
+                <table className="w-full">
+                  <thead className="bg-slate-800 sticky top-0">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                        <input
+                          type="checkbox"
+                          checked={selectAll}
+                          onChange={toggleAllSelection}
+                          className="w-3 h-3 text-blue-600 bg-slate-800 border-slate-600 rounded"
+                        />
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                        Nom
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                        Nom d'utilisateur
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                        URL
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                        Dossier
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800">
+                    {filteredItems.map((item) => {
+                      const Icon = getItemIcon(item.type);
+                      return (
+                        <tr
+                          key={item.id}
+                          className={`hover:bg-slate-800 transition-colors ${
+                            item.selected ? "bg-slate-700 bg-opacity-30" : ""
+                          }`}
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <input
+                              type="checkbox"
+                              checked={item.selected}
+                              onChange={() => toggleItemSelection(item.id)}
+                              className="w-3 h-3 text-blue-600 bg-slate-800 border-slate-600 rounded"
+                            />
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <Icon className="w-5 h-5 text-slate-400 mr-3" />
+                              <div>
+                                <div className="text-sm font-medium text-white flex items-center">
+                                  {item.name}
+                                  {item.favorite && (
+                                    <Star className="w-4 h-4 text-yellow-500 ml-2 fill-current" />
+                                  )}
+                                </div>
+                                <div className="text-xs text-slate-400 capitalize">
+                                  {item.type === "login" && "Connexion"}
+                                  {item.type === "card" && "Carte"}
+                                  {item.type === "identity" && "Identité"}
+                                  {item.type === "secureNote" &&
+                                    "Note sécurisée"}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-slate-300">
+                              {item.username || "-"}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-slate-300">
+                              {item.url || "-"}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-slate-300">
+                              {item.folder || "-"}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center space-x-2">
+                              <button className="p-1 text-slate-400 hover:text-white transition-colors">
+                                <Copy className="w-4 h-4" />
+                              </button>
+                              <button className="p-1 text-slate-400 hover:text-white transition-colors">
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button className="p-1 text-slate-400 hover:text-white transition-colors">
+                                <Edit className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
 
-              {/* Tips */}
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                  <Settings className="w-5 h-5 mr-2 text-purple-500" />
-                  Conseils
-                </h3>
-                <div className="space-y-3 text-sm text-slate-400">
-                  <p>
-                    Exportez régulièrement vos données pour sauvegarder votre
-                    coffre.
-                  </p>
-                  <p>
-                    Le format JSON est recommandé pour une sauvegarde complète.
-                  </p>
-                  <p>
-                    Le format CSV est utile pour migrer vers d'autres
-                    gestionnaires.
-                  </p>
+              {/* Preview */}
+              {showPreview && selectedCount > 0 && (
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4">
+                    Aperçu de l'exportation
+                  </h3>
+                  <div className="p-4 bg-slate-800 rounded-lg">
+                    <pre className="text-xs text-slate-400 font-mono overflow-x-auto">
+                      {getPreviewData()}
+                    </pre>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Empty State */}
+              {filteredItems.length === 0 && (
+                <div className="flex flex-col items-center justify-center text-slate-400">
+                  <Database className="w-16 h-16 mb-4 text-slate-600" />
+                  <h3 className="text-xl font-semibold mb-2">
+                    Aucun élément à exporter
+                  </h3>
+                  <p className="text-sm mb-6">
+                    Aucun élément ne correspond à vos critères de recherche
+                  </p>
+                  <button
+                    onClick={() => {
+                      setSearchQuery("");
+                      setSelectedType("all");
+                      setShowFavorites(false);
+                    }}
+                    className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                  >
+                    <RefreshCw className="w-5 h-5 mr-2" />
+                    Réinitialiser les filtres
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
