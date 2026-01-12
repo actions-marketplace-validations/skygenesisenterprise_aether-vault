@@ -159,7 +159,7 @@
     "postcss": "^8.4.39",
     "prettier": "^3.3.2",
     "prettier-plugin-mdx": "^0.4.0",
-    "prettier-plugin-tailwindcss": "^0.6.5",
+    "prettier-plugin-tailwindcss": "^0.7.2",
     "semantic-release": "^23.1.1",
     "tailwindcss": "^3.4.4",
     "ts-jest": "^29.1.5",
