@@ -32,6 +32,7 @@ func main() {
 	var totpService *services.TOTPService
 	var policyService *services.PolicyService
 	var networkService *services.NetworkService
+	var snmpService *services.SNMPService
 
 	// Initialize database if available (optional in development)
 	if cfg.Server.Environment == "production" || (cfg.Database.Host != "" && cfg.Database.User != "") {
@@ -66,11 +67,13 @@ func main() {
 		totpService = services.NewTOTPService(db, auditService)
 		policyService = services.NewPolicyService(db)
 		networkService = services.NewNetworkService(db)
+		snmpService = services.NewSNMPService()
 		log.Printf("✅ Database-backed services initialized")
 	} else {
 		// Mock services for development
 		log.Printf("🔧 Initializing mock services for development")
 		networkService = services.NewNetworkService(nil)
+		snmpService = services.NewSNMPService()
 		// We'll need to create mock services - for now, let's create nil services
 		// and handle this in the routes/controllers
 	}
@@ -78,7 +81,7 @@ func main() {
 	// Always initialize auth service (can work with mock user service)
 	authService := services.NewAuthService(userService, &cfg.JWT)
 
-	router := routes.NewRouter(db, authService, secretService, totpService, userService, policyService, auditService, networkService)
+	router := routes.NewRouter(db, authService, secretService, totpService, userService, policyService, auditService, networkService, snmpService)
 	router.SetupRoutes()
 
 	server := &http.Server{

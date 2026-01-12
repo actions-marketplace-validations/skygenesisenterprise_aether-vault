@@ -19,10 +19,12 @@ type Router struct {
 	systemController    *controllers.SystemController
 	userController      *controllers.UserController
 	networkController   *controllers.NetworkController
+	snmpController      *controllers.SNMPController
 	authMiddleware      *middleware.AuthMiddleware
 	auditMiddleware     *middleware.AuditMiddleware
 	rateLimitMiddleware *middleware.RateLimitMiddleware
 	networkMiddleware   *middleware.NetworkMiddleware
+	snmpMiddleware      *middleware.SNMPMiddleware
 }
 
 func NewRouter(
@@ -34,6 +36,7 @@ func NewRouter(
 	policyService *services.PolicyService,
 	auditService *services.AuditService,
 	networkService *services.NetworkService,
+	snmpService *services.SNMPService,
 ) *Router {
 	authController := controllers.NewAuthController(authService, auditService)
 	secretController := controllers.NewSecretController(secretService)
@@ -43,6 +46,7 @@ func NewRouter(
 	systemController := controllers.NewSystemController(db)
 	userController := controllers.NewUserController(userService, auditService)
 	networkController := controllers.NewNetworkController(networkService)
+	snmpController := controllers.NewSNMPController(snmpService)
 
 	authMiddleware := middleware.NewAuthMiddleware(authService)
 	auditMiddleware := middleware.NewAuditMiddleware(auditService)
@@ -54,6 +58,13 @@ func NewRouter(
 		TimeoutSeconds:       30,
 	}
 	networkMiddleware := middleware.NewNetworkMiddleware(networkConfig)
+
+	snmpConfig := &middleware.SNMPConfig{
+		MaxRequestsPerMinute: 30,
+		AllowedNetworks:      []string{"127.0.0.1/8", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"},
+		TimeoutSeconds:       30,
+	}
+	snmpMiddleware := middleware.NewSNMPMiddleware(snmpConfig)
 
 	engine := gin.New()
 	engine.Use(gin.Logger())
@@ -74,10 +85,12 @@ func NewRouter(
 		systemController:    systemController,
 		userController:      userController,
 		networkController:   networkController,
+		snmpController:      snmpController,
 		authMiddleware:      authMiddleware,
 		auditMiddleware:     auditMiddleware,
 		rateLimitMiddleware: rateLimitMiddleware,
 		networkMiddleware:   networkMiddleware,
+		snmpMiddleware:      snmpMiddleware,
 	}
 }
 
@@ -148,6 +161,18 @@ func (r *Router) SetupRoutes() {
 		network.GET("/protocols", r.networkController.GetSupportedProtocols)
 		network.POST("/test", r.networkController.TestProtocol)
 		network.GET("/:id/status", r.networkController.GetProtocolStatus)
+	}
+
+	snmp := v1.Group("/snmp")
+	snmp.Use(r.authMiddleware.RequireAuth())
+	snmp.Use(r.snmpMiddleware.RateLimit())
+	snmp.Use(r.snmpMiddleware.SecurityHeaders())
+	snmp.Use(r.snmpMiddleware.ValidateTarget())
+	snmp.Use(r.snmpMiddleware.LogSNMPRequest())
+	{
+		snmp.POST("/get", r.snmpController.GetSNMPData)
+		snmp.POST("/walk", r.snmpController.WalkSNMP)
+		snmp.POST("/test", r.snmpController.TestConnection)
 	}
 
 	system := v1.Group("/system")
