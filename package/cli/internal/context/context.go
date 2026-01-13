@@ -70,46 +70,70 @@ func New(cfg *types.Config) (*Context, error) {
 		},
 	}
 
-	// Create service manager to check server status
-	serviceManager := client.NewServiceManager()
+	// Try to load cloud credentials first
+	oauthClient := client.NewOAuthClient("https://vault.skygenesisenterprise.com")
+	var authClient client.Client
+	var mode types.ExecutionMode
+	var authState *types.AuthState
 
-	// Ensure server is running
-	if !serviceManager.IsRunning() {
-		fmt.Println("Vault server is not running, starting it...")
-		if err := serviceManager.StartServer(true, ""); err != nil {
-			return nil, fmt.Errorf("failed to start server: %w", err)
+	if cloudAuth, err := oauthClient.LoadCredentials(); err == nil {
+		// Cloud credentials available, use cloud mode
+		fmt.Println("Using cloud authentication")
+		authClient = client.NewHTTPClient("https://vault.skygenesisenterprise.com")
+		authClient.SetToken(cloudAuth.AccessToken)
+		mode = types.CloudMode
+		authState = &types.AuthState{
+			Authenticated: true,
+			User:          cloudAuth.User,
+		}
+	} else {
+		// No cloud credentials, use local server
+		fmt.Println("No cloud credentials found, using local server")
+
+		// Create service manager to check server status
+		serviceManager := client.NewServiceManager()
+
+		// Ensure server is running
+		if !serviceManager.IsRunning() {
+			fmt.Println("Vault server is not running, starting it...")
+			if err := serviceManager.StartServer(true, ""); err != nil {
+				return nil, fmt.Errorf("failed to start server: %w", err)
+			}
+
+			// Wait for server to be ready
+			vaultCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			if err := serviceManager.WaitUntilServerReady(vaultCtx, 10*time.Second); err != nil {
+				return nil, fmt.Errorf("server did not become ready: %w", err)
+			}
+			fmt.Println("Vault server is now ready")
 		}
 
-		// Wait for server to be ready
-		vaultCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
+		// Create HTTP client to connect to local server
+		authClient = client.NewHTTPClient(serviceManager.GetServerURL())
 
-		if err := serviceManager.WaitUntilServerReady(vaultCtx, 10*time.Second); err != nil {
-			return nil, fmt.Errorf("server did not become ready: %w", err)
+		// Authenticate with dev token
+		credentials := &types.Credentials{
+			Method: "token",
+			Token:  "dev-token",
 		}
-		fmt.Println("Vault server is now ready")
-	}
 
-	// Create HTTP client to connect to local server
-	httpClient := client.NewHTTPClient(serviceManager.GetServerURL())
+		if _, err := authClient.Login(nil, credentials); err != nil {
+			return nil, fmt.Errorf("failed to authenticate with server: %w", err)
+		}
 
-	// Authenticate with dev token
-	credentials := &types.Credentials{
-		Method: "token",
-		Token:  "dev-token",
-	}
-
-	if _, err := httpClient.Login(nil, credentials); err != nil {
-		return nil, fmt.Errorf("failed to authenticate with server: %w", err)
+		mode = types.LocalMode
+		authState = &types.AuthState{Authenticated: true}
 	}
 
 	// Create context
 	ctx := &Context{
-		Mode:    types.LocalMode, // Default to local mode
+		Mode:    mode,
 		Config:  cfg,
 		Runtime: runtimeInfo,
-		Auth:    &types.AuthState{Authenticated: httpClient.IsAuthenticated()},
-		Client:  httpClient,
+		Auth:    authState,
+		Client:  authClient,
 	}
 
 	return ctx, nil

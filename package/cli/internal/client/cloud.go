@@ -48,6 +48,11 @@ func (c *CloudClient) IsAuthenticated() bool {
 	return false
 }
 
+// SetToken sets the authentication token
+func (c *CloudClient) SetToken(token string) {
+	// TODO: Implement token setting
+}
+
 // GetSecret retrieves a secret from cloud storage
 func (c *CloudClient) GetSecret(ctx context.Context, path string) (*types.Secret, error) {
 	// TODO: Implement cloud secret retrieval

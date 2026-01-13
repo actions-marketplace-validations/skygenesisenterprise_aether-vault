@@ -172,6 +172,11 @@ func (c *LocalClient) IsAuthenticated() bool {
 	return true
 }
 
+// SetToken sets the authentication token (no-op for local mode)
+func (c *LocalClient) SetToken(token string) {
+	// Local mode doesn't use tokens
+}
+
 // GetSecret retrieves a secret from local storage
 func (c *LocalClient) GetSecret(ctx context.Context, path string) (*types.Secret, error) {
 	if err := c.ensureSecretsDir(); err != nil {

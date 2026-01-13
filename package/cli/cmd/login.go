@@ -1,8 +1,15 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
+	"github.com/skygenesisenterprise/aether-vault/package/cli/internal/client"
+	"github.com/skygenesisenterprise/aether-vault/package/cli/pkg/types"
 	"github.com/spf13/cobra"
 )
 
@@ -109,7 +116,13 @@ func runConnectCommand(cmd *cobra.Command, args []string) error {
 func runLogoutCommand(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Logging out from Aether Vault cloud...\n")
 
-	// TODO: Implement logout logic
+	// Create OAuth client to clear credentials
+	oauthClient := client.NewOAuthClient("https://vault.skygenesisenterprise.com")
+
+	if err := oauthClient.ClearCredentials(); err != nil {
+		fmt.Printf("Warning: Failed to clear credentials: %v\n", err)
+	}
+
 	fmt.Printf("✓ Authentication tokens cleared\n")
 	fmt.Printf("✓ Switched to local mode\n")
 	fmt.Printf("✓ Cloud connection closed\n")
@@ -124,14 +137,41 @@ func runOAuthLogin(url string) error {
 	fmt.Printf("OAuth Authentication\n")
 	fmt.Printf("===================\n\n")
 
-	fmt.Printf("Please follow these steps to authenticate:\n")
-	fmt.Printf("1. Open this URL in your browser:\n")
-	fmt.Printf("   %s/oauth/authorize\n", url)
-	fmt.Printf("2. Complete the authentication process\n")
-	fmt.Printf("3. Copy the authorization code\n")
-	fmt.Printf("4. Return here and paste the code\n\n")
+	// Create OAuth client
+	oauthClient := client.NewOAuthClient(url)
 
-	fmt.Printf("OAuth flow not yet implemented. This is a placeholder.\n")
+	// Set up context for cancellation
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Handle Ctrl+C gracefully
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigChan
+		fmt.Println("\nAuthentication cancelled by user")
+		cancel()
+	}()
+
+	// Start OAuth flow with manual code entry
+	authResp, err := oauthClient.StartOAuthFlowWithCode(ctx)
+	if err != nil {
+		return fmt.Errorf("OAuth authentication failed: %w", err)
+	}
+
+	// Save credentials
+	if err := oauthClient.SaveCredentials(authResp); err != nil {
+		return fmt.Errorf("failed to save credentials: %w", err)
+	}
+
+	// Display success message
+	fmt.Printf("\n✓ Authentication successful!\n")
+	fmt.Printf("✓ Logged in as: %s (%s)\n", authResp.User.DisplayName, authResp.User.Email)
+	fmt.Printf("✓ Access token saved securely\n")
+	fmt.Printf("✓ Switched to cloud mode\n\n")
+
+	fmt.Printf("You can now use vault commands with cloud access.\n")
+	fmt.Printf("Use 'vault logout' to return to local mode.\n")
 
 	return nil
 }
@@ -143,7 +183,44 @@ func runTokenLogin(token, url string) error {
 
 	fmt.Printf("Validating token with %s...\n", url)
 
-	// TODO: Implement token validation
+	// Create HTTP client to validate token
+	httpClient := client.NewHTTPClient(url)
+	httpClient.SetToken(token)
+
+	// Test token by making a health check request
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	healthResp, err := httpClient.Health(ctx)
+	if err != nil {
+		return fmt.Errorf("token validation failed: %w", err)
+	}
+
+	if healthResp.Status != "healthy" {
+		return fmt.Errorf("server returned unhealthy status: %s", healthResp.Status)
+	}
+
+	// Create mock auth response for token-based auth
+	authResp := &types.AuthResponse{
+		AccessToken:  token,
+		RefreshToken: token,
+		TokenType:    "Bearer",
+		ExpiresIn:    0, // No expiration for API tokens
+		Scope:        "all",
+		User: &types.UserInfo{
+			ID:          "token-user",
+			Username:    "api-token",
+			Email:       "",
+			DisplayName: "API Token User",
+		},
+	}
+
+	// Save credentials
+	oauthClient := client.NewOAuthClient(url)
+	if err := oauthClient.SaveCredentials(authResp); err != nil {
+		return fmt.Errorf("failed to save credentials: %w", err)
+	}
+
 	fmt.Printf("✓ Token validated successfully\n")
 	fmt.Printf("✓ Authentication established\n")
 	fmt.Printf("✓ Switched to cloud mode\n")

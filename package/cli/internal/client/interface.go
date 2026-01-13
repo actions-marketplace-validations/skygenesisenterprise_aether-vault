@@ -14,6 +14,7 @@ type Client interface {
 	Logout(ctx context.Context) error
 	RefreshToken(ctx context.Context, refreshToken string) (*types.TokenResponse, error)
 	IsAuthenticated() bool
+	SetToken(token string)
 
 	// Secret management
 	GetSecret(ctx context.Context, path string) (*types.Secret, error)
