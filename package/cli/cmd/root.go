@@ -41,11 +41,45 @@ Quick start:
 	cmd.PersistentFlags().Bool("verbose", false, "Enable verbose output")
 	cmd.PersistentFlags().String("config", "", "Config file path (default is ~/.aether/vault/config.yaml)")
 
-	// Add subcommands
+	// Add subcommands - Common commands
+	cmd.AddCommand(newReadCommand())
+	cmd.AddCommand(newWriteCommand())
+	cmd.AddCommand(newDeleteCommand())
+	cmd.AddCommand(newListCommand())
+	cmd.AddCommand(newLoginCommand())
+	cmd.AddCommand(newAgentCommand())
+	cmd.AddCommand(newServerCommand())
+	cmd.AddCommand(newStatusCommand())
+	cmd.AddCommand(newUnwrapCommand())
+	cmd.AddCommand(newUpgradeCommand())
+
+	// Add subcommands - Other commands
+	cmd.AddCommand(newAuditCommand())
+	cmd.AddCommand(newDebugCommand())
+	cmd.AddCommand(newEventsCommand())
+	cmd.AddCommand(newHcpCommand())
+	cmd.AddCommand(newKvCommand())
+	cmd.AddCommand(newLeaseCommand())
+	cmd.AddCommand(newMonitorCommand())
+	cmd.AddCommand(newNamespaceCommand())
+	cmd.AddCommand(newOperatorCommand())
+	cmd.AddCommand(newPatchCommand())
+	cmd.AddCommand(newPathHelpCommand())
+	cmd.AddCommand(newPkiCommand())
+	cmd.AddCommand(newPluginCommand())
+	cmd.AddCommand(newPolicyCommand())
+	cmd.AddCommand(newPrintCommand())
+	cmd.AddCommand(newProxyCommand())
+	cmd.AddCommand(newSecretsCommand())
+	cmd.AddCommand(newSshCommand())
+	cmd.AddCommand(newTokenCommand())
+	cmd.AddCommand(newTransformCommand())
+	cmd.AddCommand(newTransitCommand())
+	cmd.AddCommand(newVersionHistoryCommand())
+
+	// Add existing commands
 	cmd.AddCommand(newVersionCommand())
 	cmd.AddCommand(newInitCommand())
-	cmd.AddCommand(newAuthCommand())
-	cmd.AddCommand(newStatusCommand())
 	cmd.AddCommand(newHelpCommand())
 	cmd.AddCommand(newCapabilityCommand())
 

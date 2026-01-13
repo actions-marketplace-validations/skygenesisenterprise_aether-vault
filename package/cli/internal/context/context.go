@@ -124,3 +124,76 @@ func (c *Context) IsAuthenticated() bool {
 func (c *Context) IsCloudMode() bool {
 	return c.Mode == types.CloudMode
 }
+
+// Read reads data from the specified path
+func (c *Context) Read(path string) (map[string]interface{}, error) {
+	// TODO: Implement actual Vault reading logic
+	// For now, return mock data
+	return map[string]interface{}{
+		"path": path,
+		"data": map[string]interface{}{
+			"username": "admin",
+			"password": "secret123",
+			"database": "myapp",
+		},
+		"metadata": map[string]interface{}{
+			"created_time": "2024-01-01T00:00:00Z",
+			"version":      1,
+		},
+	}, nil
+}
+
+// Write writes data to the specified path
+func (c *Context) Write(path string, data map[string]interface{}, force bool) (map[string]interface{}, error) {
+	// TODO: Implement actual Vault writing logic
+	// For now, return mock result
+	return map[string]interface{}{
+		"path":    path,
+		"version": 2,
+		"written": true,
+	}, nil
+}
+
+// Delete deletes data from the specified path
+func (c *Context) Delete(path string, versions string, recursive bool) (map[string]interface{}, error) {
+	// TODO: Implement actual Vault deletion logic
+	// For now, return mock result
+	return map[string]interface{}{
+		"path":      path,
+		"deleted":   true,
+		"versions":  versions,
+		"recursive": recursive,
+	}, nil
+}
+
+// List lists data from the specified path
+func (c *Context) List(path string) (map[string]interface{}, error) {
+	// TODO: Implement actual Vault listing logic
+	// For now, return mock data
+	return map[string]interface{}{
+		"path": path,
+		"keys": []string{
+			"data/",
+			"metadata/",
+			"config/",
+		},
+		"summary": map[string]interface{}{
+			"total_keys": 3,
+			"folders":    3,
+			"files":      0,
+		},
+	}, nil
+}
+
+// Unwrap unwraps a wrapped secret
+func (c *Context) Unwrap(token string) (map[string]interface{}, error) {
+	// TODO: Implement actual Vault unwrap logic
+	// For now, return mock data
+	return map[string]interface{}{
+		"token": token,
+		"data": map[string]interface{}{
+			"secret": "unwrapped-data",
+			"ttl":    "1h",
+		},
+	}, nil
+}

@@ -1,16 +1,12 @@
 package cmd
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
-	"github.com/skygenesisenterprise/aether-vault/package/cli/internal/capability"
 	"github.com/skygenesisenterprise/aether-vault/package/cli/internal/ipc"
-	"github.com/skygenesisenterprise/aether-vault/package/cli/internal/ui"
 	"github.com/skygenesisenterprise/aether-vault/package/cli/pkg/types"
 	"github.com/spf13/cobra"
 )

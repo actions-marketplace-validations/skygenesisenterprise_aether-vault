@@ -461,7 +461,7 @@ func (a *Auditor) LogCapabilityRevocation(capabilityID, reason, revokedBy string
 }
 
 // LogPolicyEvaluation logs a policy evaluation
-func (a *Auditor) LogPolicyEvaluation(request *types.CapabilityRequest, result *capability.PolicyResult, clientInfo *ClientInfo) error {
+func (a *Auditor) LogPolicyEvaluation(request *types.CapabilityRequest, result *types.PolicyResult, clientInfo *ClientInfo) error {
 	severity := "info"
 	if result.Decision == "deny" {
 		severity = "warning"
@@ -483,7 +483,7 @@ func (a *Auditor) LogPolicyEvaluation(request *types.CapabilityRequest, result *
 
 	// Add policy context
 	event.Context["policy_result"] = result
-	event.Context["applied_rules"] = result.AppliedRules
+	event.Context["applied_policies"] = result.AppliedPolicies
 	event.Context["conditions"] = result.Conditions
 
 	return a.LogEvent(event)
