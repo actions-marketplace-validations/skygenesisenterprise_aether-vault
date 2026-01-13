@@ -1,9 +1,12 @@
 package context
 
 import (
+	"context"
+	"fmt"
 	"runtime"
 	"time"
 
+	"github.com/skygenesisenterprise/aether-vault/package/cli/internal/client"
 	"github.com/skygenesisenterprise/aether-vault/package/cli/pkg/types"
 )
 
@@ -41,6 +44,9 @@ type Context struct {
 
 	// Authentication state
 	Auth *types.AuthState
+
+	// Vault client
+	Client client.Client
 }
 
 // New creates a new execution context
@@ -64,12 +70,46 @@ func New(cfg *types.Config) (*Context, error) {
 		},
 	}
 
+	// Create service manager to check server status
+	serviceManager := client.NewServiceManager()
+
+	// Ensure server is running
+	if !serviceManager.IsRunning() {
+		fmt.Println("Vault server is not running, starting it...")
+		if err := serviceManager.StartServer(true, ""); err != nil {
+			return nil, fmt.Errorf("failed to start server: %w", err)
+		}
+
+		// Wait for server to be ready
+		vaultCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		if err := serviceManager.WaitUntilServerReady(vaultCtx, 10*time.Second); err != nil {
+			return nil, fmt.Errorf("server did not become ready: %w", err)
+		}
+		fmt.Println("Vault server is now ready")
+	}
+
+	// Create HTTP client to connect to local server
+	httpClient := client.NewHTTPClient(serviceManager.GetServerURL())
+
+	// Authenticate with dev token
+	credentials := &types.Credentials{
+		Method: "token",
+		Token:  "dev-token",
+	}
+
+	if _, err := httpClient.Login(nil, credentials); err != nil {
+		return nil, fmt.Errorf("failed to authenticate with server: %w", err)
+	}
+
 	// Create context
 	ctx := &Context{
 		Mode:    types.LocalMode, // Default to local mode
 		Config:  cfg,
 		Runtime: runtimeInfo,
-		Auth:    &types.AuthState{Authenticated: false},
+		Auth:    &types.AuthState{Authenticated: httpClient.IsAuthenticated()},
+		Client:  httpClient,
 	}
 
 	return ctx, nil
@@ -127,37 +167,61 @@ func (c *Context) IsCloudMode() bool {
 
 // Read reads data from the specified path
 func (c *Context) Read(path string) (map[string]interface{}, error) {
-	// TODO: Implement actual Vault reading logic
-	// For now, return mock data
+	if c.Client == nil {
+		return nil, fmt.Errorf("client not initialized")
+	}
+
+	secret, err := c.Client.GetSecret(nil, path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read secret: %w", err)
+	}
+
 	return map[string]interface{}{
-		"path": path,
-		"data": map[string]interface{}{
-			"username": "admin",
-			"password": "secret123",
-			"database": "myapp",
-		},
-		"metadata": map[string]interface{}{
-			"created_time": "2024-01-01T00:00:00Z",
-			"version":      1,
-		},
+		"data":     secret.Data,
+		"metadata": secret.Metadata,
+		"path":     path,
 	}, nil
 }
 
 // Write writes data to the specified path
 func (c *Context) Write(path string, data map[string]interface{}, force bool) (map[string]interface{}, error) {
-	// TODO: Implement actual Vault writing logic
-	// For now, return mock result
+	if c.Client == nil {
+		return nil, fmt.Errorf("client not initialized")
+	}
+
+	secret := &types.Secret{
+		Path: path,
+		Data: data,
+		Metadata: &types.SecretMetadata{
+			CreatedAt: time.Now().Unix(),
+			UpdatedAt: time.Now().Unix(),
+			CreatedBy: "cli",
+			UpdatedBy: "cli",
+		},
+		Version: 1,
+	}
+
+	if err := c.Client.SetSecret(nil, path, secret); err != nil {
+		return nil, fmt.Errorf("failed to write secret: %w", err)
+	}
+
 	return map[string]interface{}{
 		"path":    path,
-		"version": 2,
+		"version": secret.Version,
 		"written": true,
 	}, nil
 }
 
 // Delete deletes data from the specified path
 func (c *Context) Delete(path string, versions string, recursive bool) (map[string]interface{}, error) {
-	// TODO: Implement actual Vault deletion logic
-	// For now, return mock result
+	if c.Client == nil {
+		return nil, fmt.Errorf("client not initialized")
+	}
+
+	if err := c.Client.DeleteSecret(nil, path); err != nil {
+		return nil, fmt.Errorf("failed to delete secret: %w", err)
+	}
+
 	return map[string]interface{}{
 		"path":      path,
 		"deleted":   true,
@@ -168,18 +232,26 @@ func (c *Context) Delete(path string, versions string, recursive bool) (map[stri
 
 // List lists data from the specified path
 func (c *Context) List(path string) (map[string]interface{}, error) {
-	// TODO: Implement actual Vault listing logic
-	// For now, return mock data
+	if c.Client == nil {
+		return nil, fmt.Errorf("client not initialized")
+	}
+
+	secrets, err := c.Client.ListSecrets(nil, path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list secrets: %w", err)
+	}
+
+	var keys []string
+	for _, secret := range secrets {
+		keys = append(keys, secret.Path)
+	}
+
 	return map[string]interface{}{
 		"path": path,
-		"keys": []string{
-			"data/",
-			"metadata/",
-			"config/",
-		},
+		"keys": keys,
 		"summary": map[string]interface{}{
-			"total_keys": 3,
-			"folders":    3,
+			"total_keys": len(keys),
+			"folders":    len(keys),
 			"files":      0,
 		},
 	}, nil

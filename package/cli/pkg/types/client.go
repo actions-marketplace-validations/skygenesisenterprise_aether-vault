@@ -41,6 +41,9 @@ type Secret struct {
 
 // SecretMetadata contains secret metadata
 type SecretMetadata struct {
+	// Secret path
+	Path string
+
 	// Creation timestamp
 	CreatedAt int64
 
