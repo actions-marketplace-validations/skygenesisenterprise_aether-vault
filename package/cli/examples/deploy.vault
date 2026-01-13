@@ -1,0 +1,38 @@
+# Aether Vault Shell DSL Example Script
+# This script demonstrates various DSL features for automation
+
+# Set variables
+set env production
+set app myapp
+set secret_path secret/${app}/${env}
+
+# Echo messages
+echo "Starting deployment for ${app} in ${env} environment"
+
+# Check if secret exists
+if "${secret_path}" == "exists" then
+    echo "Secret path already exists, reading current value"
+    read ${secret_path}
+else
+    echo "Creating new secret path"
+    write ${secret_path} value="initial_password"
+fi
+
+# Loop through multiple environments
+for env in "staging,production,development" do
+    echo "Processing environment: ${env}"
+    set env_path secret/${app}/${env}
+    
+    # Wait for secret to be available (max 30 seconds)
+    wait "${env_path} == ready" 30s
+    
+    # Read the secret
+    read ${env_path}
+    
+    # Small delay between environments
+    sleep 1s
+done
+
+# Final status check
+echo "Deployment completed successfully"
+status --format json

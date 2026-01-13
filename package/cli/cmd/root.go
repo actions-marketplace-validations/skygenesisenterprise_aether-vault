@@ -95,6 +95,7 @@ Quick start:
 	cmd.AddCommand(newPasswordCommand())
 	cmd.AddCommand(newTOTPCommand())
 	cmd.AddCommand(newLogsCommand())
+	cmd.AddCommand(newShellCommand())
 
 	return cmd
 }

@@ -38,7 +38,7 @@ jobs:
           VERSION=${{ steps.version.outputs.version }}
           BUILD_TIME=$(date -u '+%Y-%m-%d_%H:%M:%S')
           GIT_COMMIT=${{ github.sha }}
-          LDFLAGS=-ldflags="-X main.version=$VERSION -X main.buildTime=$BUILD_TIME -X main.gitCommit=$GIT_COMMIT"
+          LDFLAGS="-ldflags=-X github.com/skygenesisenterprise/aether-vault/package/cli/cmd.Version=$VERSION -X github.com/skygenesisenterprise/aether-vault/package/cli/cmd.BuildTime=$BUILD_TIME -X github.com/skygenesisenterprise/aether-vault/package/cli/cmd.GitCommit=$GIT_COMMIT"
 
           mkdir -p $BUILD_DIR
 
