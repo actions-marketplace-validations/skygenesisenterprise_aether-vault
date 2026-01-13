@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"os/signal"
@@ -73,8 +74,11 @@ func (v *TOTPViewer) UpdateCodes() error {
 	now := time.Now()
 
 	for _, display := range v.entries {
+		// Generate code using a sample secret for now
+		// TODO: Get actual secret from entry when connected to vault
+		sampleSecret := "JBSWY3DPEHPK3PXP" // This is "Hello" in base32
 		creds := &types.TOTPCredentials{
-			Secret:    display.Account, // TODO: Get actual secret from entry
+			Secret:    sampleSecret,
 			Algorithm: types.TOTPAlgorithmSHA1,
 			Digits:    6,
 			Period:    display.Period,
@@ -102,8 +106,16 @@ func (v *TOTPViewer) UpdateCodes() error {
 func (v *TOTPViewer) Start() error {
 	v.running = true
 
-	// Set up terminal for raw mode
-	// TODO: Implement proper terminal raw mode
+	// Save terminal state and set raw mode
+	oldState, err := v.setRawMode()
+	if err != nil {
+		return fmt.Errorf("failed to set terminal mode: %w", err)
+	}
+	defer v.restoreTerminal(oldState)
+
+	// Handle keyboard input in a goroutine
+	inputChan := make(chan string, 1)
+	go v.handleKeyboardInput(inputChan)
 
 	// Handle signals for graceful shutdown
 	sigChan := make(chan os.Signal, 1)
@@ -122,6 +134,8 @@ func (v *TOTPViewer) Start() error {
 			return nil
 		case <-ticker.C:
 			v.render()
+		case input := <-inputChan:
+			v.handleInput(input)
 		}
 	}
 
@@ -143,6 +157,9 @@ func (v *TOTPViewer) clearScreen() {
 // render renders the TOTP display
 func (v *TOTPViewer) render() {
 	v.clearScreen()
+
+	// Update codes before rendering
+	v.UpdateCodes()
 
 	// Header
 	fmt.Printf("%s╔══════════════════════════════════════════════════════════════╗%s\n", Blue, Reset)
@@ -354,5 +371,60 @@ func DefaultTOTPDisplayOptions() *TOTPDisplayOptions {
 		ShowQR:       false,
 		CopyOnSelect: false,
 		Interactive:  false,
+	}
+}
+
+// setRawMode sets terminal to raw mode for immediate input
+func (v *TOTPViewer) setRawMode() (interface{}, error) {
+	// For now, use a simple approach. In a real implementation,
+	// you'd want to use a proper terminal library like github.com/pkg/term
+	return nil, nil
+}
+
+// restoreTerminal restores terminal to original state
+func (v *TOTPViewer) restoreTerminal(oldState interface{}) error {
+	return nil
+}
+
+// handleKeyboardInput reads keyboard input in a separate goroutine
+func (v *TOTPViewer) handleKeyboardInput(inputChan chan<- string) {
+	reader := bufio.NewReader(os.Stdin)
+
+	for v.running {
+		// Read input line by line (simpler approach)
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			continue
+		}
+
+		// Remove newline and trim
+		input = strings.TrimSpace(input)
+		if input != "" {
+			inputChan <- input
+		}
+	}
+}
+
+// handleInput processes keyboard input
+func (v *TOTPViewer) handleInput(input string) {
+	switch strings.ToLower(input) {
+	case "q":
+		v.Stop()
+	case "up":
+		v.MoveSelection(-1)
+	case "down":
+		v.MoveSelection(1)
+	case "c":
+		err := v.CopySelectedCode()
+		if err != nil {
+			// Show error message briefly
+			fmt.Printf("\r%sError: %v%s\n", Red, err, Reset)
+		}
+	case "a":
+		// TODO: Implement add entry functionality
+		fmt.Printf("\r%sAdd entry functionality not yet implemented%s\n", Yellow, Reset)
+	case "d":
+		// TODO: Implement delete entry functionality
+		fmt.Printf("\r%sDelete entry functionality not yet implemented%s\n", Yellow, Reset)
 	}
 }

@@ -28,6 +28,11 @@ Quick start:
   vault status   Check current status
   vault login    Connect to cloud services`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Check for version flag
+			if version, _ := cmd.Flags().GetBool("version"); version {
+				return runVersionCommand(cmd, args)
+			}
+
 			// If no arguments, show help and status
 			if len(args) == 0 {
 				return runRootCommand(cmd)
@@ -40,6 +45,9 @@ Quick start:
 	cmd.PersistentFlags().String("format", "table", "Output format (json, yaml, table)")
 	cmd.PersistentFlags().Bool("verbose", false, "Enable verbose output")
 	cmd.PersistentFlags().String("config", "", "Config file path (default is ~/.aether/vault/config.yaml)")
+
+	// Version flag
+	cmd.Flags().Bool("version", false, "Display version information")
 
 	// Add subcommands - Common commands
 	cmd.AddCommand(newReadCommand())
@@ -82,6 +90,11 @@ Quick start:
 	cmd.AddCommand(newInitCommand())
 	cmd.AddCommand(newHelpCommand())
 	cmd.AddCommand(newCapabilityCommand())
+
+	// Add new commands
+	cmd.AddCommand(newPasswordCommand())
+	cmd.AddCommand(newTOTPCommand())
+	cmd.AddCommand(newLogsCommand())
 
 	return cmd
 }

@@ -322,7 +322,7 @@ func runPasswordCreateCommand(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		entry.Password = password
-		fmt.Printf("%sGenerated secure password%s\n", color.Green, color.Reset)
+		fmt.Printf("%sGenerated secure password%s\n", ui.Green, ui.Reset)
 	}
 
 	if url, _ := cmd.Flags().GetString("url"); url != "" {
@@ -350,19 +350,19 @@ func runPasswordCreateCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	// TODO: Save to vault
-	fmt.Printf("%sPassword entry '%s' created successfully%s\n", color.Green, entry.Name, color.Reset)
+	fmt.Printf("%sPassword entry '%s' created successfully%s\n", ui.Green, entry.Name, ui.Reset)
 
 	return nil
 }
 
 func runPasswordListCommand(cmd *cobra.Command, args []string) error {
-	fmt.Printf("%sPassword entries%s\n", color.Blue, color.Reset)
+	fmt.Printf("%sPassword entries%s\n", ui.Blue, ui.Reset)
 
 	// TODO: Fetch from vault
 	fmt.Println("(Listing would show actual password entries here)")
 
 	fmt.Printf("%sName%-20s Username%-20s Type%-15s Updated%s\n",
-		color.Bold, "", "", "", color.Reset)
+		ui.Bold, "", "", "", ui.Reset)
 	fmt.Println(strings.Repeat("-", 70))
 
 	return nil
@@ -377,15 +377,15 @@ func runPasswordGetCommand(cmd *cobra.Command, args []string) error {
 	showPassword, _ := cmd.Flags().GetBool("show-password")
 	copyPassword, _ := cmd.Flags().GetBool("copy-password")
 
-	fmt.Printf("%sPassword entry: %s%s\n", color.Blue, name, color.Reset)
+	fmt.Printf("%sPassword entry: %s%s\n", ui.Blue, name, ui.Reset)
 
 	// TODO: Fetch from vault
 	if showPassword {
-		fmt.Printf("Password: %s(show password here)%s\n", color.Yellow, color.Reset)
+		fmt.Printf("Password: %s(show password here)%s\n", ui.Yellow, ui.Reset)
 	}
 
 	if copyPassword {
-		fmt.Printf("%sPassword copied to clipboard%s\n", color.Green, color.Reset)
+		fmt.Printf("%sPassword copied to clipboard%s\n", ui.Green, ui.Reset)
 		// TODO: Implement clipboard copy
 	}
 
@@ -398,10 +398,10 @@ func runPasswordUpdateCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	name := args[0]
-	fmt.Printf("%sUpdating password entry: %s%s\n", color.Blue, name, color.Reset)
+	fmt.Printf("%sUpdating password entry: %s%s\n", ui.Blue, name, ui.Reset)
 
 	// TODO: Update in vault
-	fmt.Printf("%sPassword entry '%s' updated successfully%s\n", color.Green, name, color.Reset)
+	fmt.Printf("%sPassword entry '%s' updated successfully%s\n", ui.Green, name, ui.Reset)
 
 	return nil
 }
@@ -415,7 +415,7 @@ func runPasswordDeleteCommand(cmd *cobra.Command, args []string) error {
 	force, _ := cmd.Flags().GetBool("force")
 
 	if !force {
-		fmt.Printf("%sAre you sure you want to delete '%s'? [y/N]: %s", color.Yellow, name, color.Reset)
+		fmt.Printf("%sAre you sure you want to delete '%s'? [y/N]: %s", ui.Yellow, name, ui.Reset)
 		var response string
 		fmt.Scanln(&response)
 		if strings.ToLower(response) != "y" {
@@ -424,10 +424,10 @@ func runPasswordDeleteCommand(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	fmt.Printf("%sDeleting password entry: %s%s\n", color.Red, name, color.Reset)
+	fmt.Printf("%sDeleting password entry: %s%s\n", ui.Red, name, ui.Reset)
 
 	// TODO: Delete from vault
-	fmt.Printf("%sPassword entry '%s' deleted successfully%s\n", color.Green, name, color.Reset)
+	fmt.Printf("%sPassword entry '%s' deleted successfully%s\n", ui.Green, name, ui.Reset)
 
 	return nil
 }
@@ -452,11 +452,11 @@ func runPasswordGenerateCommand(cmd *cobra.Command, args []string) error {
 	copy, _ := cmd.Flags().GetBool("copy")
 
 	if show {
-		fmt.Printf("%sGenerated password:%s %s%s%s\n", color.Green, color.Reset, color.Yellow, password, color.Reset)
+		fmt.Printf("%sGenerated password:%s %s%s%s\n", ui.Green, ui.Reset, ui.Yellow, password, ui.Reset)
 	}
 
 	if copy {
-		fmt.Printf("%sPassword copied to clipboard%s\n", color.Green, color.Reset)
+		fmt.Printf("%sPassword copied to clipboard%s\n", ui.Green, ui.Reset)
 		// TODO: Implement clipboard copy
 	}
 
@@ -469,10 +469,10 @@ func runPasswordSearchCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	query := args[0]
-	fmt.Printf("%sSearching for: %s%s\n", color.Blue, query, color.Reset)
+	fmt.Printf("%sSearching for: %s%s\n", ui.Blue, query, ui.Reset)
 
 	// TODO: Search in vault
-	fmt.Printf("%sFound X matching password entries%s\n", color.Green, color.Reset)
+	fmt.Printf("%sFound X matching password entries%s\n", ui.Green, ui.Reset)
 
 	return nil
 }
@@ -486,14 +486,14 @@ func runPasswordImportCommand(cmd *cobra.Command, args []string) error {
 	preview, _ := cmd.Flags().GetBool("preview")
 	_, _ = cmd.Flags().GetString("format")
 
-	fmt.Printf("%sImporting passwords from: %s%s\n", color.Blue, file, color.Reset)
+	fmt.Printf("%sImporting passwords from: %s%s\n", ui.Blue, file, ui.Reset)
 
 	if preview {
-		fmt.Printf("%sPreview mode - no changes will be made%s\n", color.Yellow, color.Reset)
+		fmt.Printf("%sPreview mode - no changes will be made%s\n", ui.Yellow, ui.Reset)
 	}
 
 	// TODO: Implement import based on format
-	fmt.Printf("%sImport completed successfully%s\n", color.Green, color.Reset)
+	fmt.Printf("%sImport completed successfully%s\n", ui.Green, ui.Reset)
 
 	return nil
 }
@@ -503,7 +503,7 @@ func runPasswordExportCommand(cmd *cobra.Command, args []string) error {
 	format, _ := cmd.Flags().GetString("format")
 	includePasswords, _ := cmd.Flags().GetBool("include-passwords")
 
-	fmt.Printf("%sExporting passwords%s\n", color.Blue, color.Reset)
+	fmt.Printf("%sExporting passwords%s\n", ui.Blue, ui.Reset)
 	fmt.Printf("Format: %s\n", format)
 	fmt.Printf("Include passwords: %s\n", includePasswords)
 	if output != "" {
@@ -511,7 +511,7 @@ func runPasswordExportCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	// TODO: Implement export
-	fmt.Printf("%sExport completed successfully%s\n", color.Green, color.Reset)
+	fmt.Printf("%sExport completed successfully%s\n", ui.Green, ui.Reset)
 
 	return nil
 }
@@ -519,7 +519,7 @@ func runPasswordExportCommand(cmd *cobra.Command, args []string) error {
 // Helper functions
 
 func createPasswordInteractive(cmd *cobra.Command) error {
-	fmt.Printf("%sInteractive password creation%s\n", color.Blue, color.Reset)
+	fmt.Printf("%sInteractive password creation%s\n", ui.Blue, ui.Reset)
 
 	var name, username, password, url string
 
@@ -538,14 +538,14 @@ func createPasswordInteractive(cmd *cobra.Command) error {
 			return err
 		}
 		password = generated
-		fmt.Printf("%sGenerated secure password: %s%s\n", color.Green, password, color.Reset)
+		fmt.Printf("%sGenerated secure password: %s%s\n", ui.Green, password, ui.Reset)
 	}
 
 	fmt.Print("URL (optional): ")
 	fmt.Scanln(&url)
 
 	fmt.Printf("%sPassword entry '%s' would be created with the provided information%s\n",
-		color.Green, name, color.Reset)
+		ui.Green, name, ui.Reset)
 
 	return nil
 }

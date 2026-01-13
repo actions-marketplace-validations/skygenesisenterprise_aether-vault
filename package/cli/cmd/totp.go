@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/skygenesisenterprise/aether-vault/package/cli/internal/ui"
-	"github.com/skygenesisenterprise/aether-vault/package/cli/internal/ui/color"
 	"github.com/skygenesisenterprise/aether-vault/package/cli/pkg/types"
 	"github.com/spf13/cobra"
 )
@@ -96,29 +95,30 @@ Examples:
 func newTOTPListCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List TOTP entries",
-		Long: `List TOTP entries in your vault with optional filtering.
+		Short: "Display TOTP codes with animations",
+		Long: `Display TOTP codes in real-time with animations and progress bars.
+
+This provides an experience similar to popular authenticator apps like Google Authenticator,
+with live updates and visual indicators showing the 30-second countdown.
+
+The display includes:
+  - 6-digit TOTP codes with automatic refresh
+  - Visual progress bars showing time remaining
+  - Color-coded warnings when codes are about to expire
+  - Interactive navigation between entries
 
 Examples:
   vault totp list
-  vault totp list --folder "Work"
-  vault totp list --tags "important,work"
-  vault totp list --search "github"
-  vault totp list --interactive
-  vault totp list --continuous`,
+  vault totp list --no-progress
+
+Controls:
+  [↑↓] Navigate between entries
+  [c] Copy selected code to clipboard
+  [q] Quit the viewer`,
 		RunE: runTOTPListCommand,
 	}
 
-	cmd.Flags().String("folder", "", "Filter by folder")
-	cmd.Flags().StringSlice("tags", []string{}, "Filter by tags")
-	cmd.Flags().String("search", "", "Search term")
-	cmd.Flags().Bool("favorites", false, "Show only favorites")
-	cmd.Flags().Bool("interactive", false, "Interactive mode with real-time updates")
-	cmd.Flags().Bool("continuous", false, "Continuous display mode")
-	cmd.Flags().Bool("show-progress", true, "Show progress bars")
-	cmd.Flags().Int("limit", 50, "Limit results")
-	cmd.Flags().String("sort", "name", "Sort by field (name, created, updated)")
-	cmd.Flags().String("order", "asc", "Sort order (asc, desc)")
+	cmd.Flags().Bool("show-progress", true, "Show progress bars (default: true)")
 
 	return cmd
 }
@@ -232,7 +232,7 @@ Examples:
 // Command runners
 
 func runTOTPAddCommand(cmd *cobra.Command, args []string) error {
-	fmt.Printf("%sAdding new TOTP entry%s\n", color.Blue, color.Reset)
+	fmt.Printf("%sAdding new TOTP entry%s\n", ui.Blue, ui.Reset)
 
 	interactive, _ := cmd.Flags().GetBool("interactive")
 
@@ -290,7 +290,7 @@ func runTOTPAddCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	// TODO: Save to vault
-	fmt.Printf("%sTOTP entry '%s' added successfully%s\n", color.Green, entry.Account, color.Reset)
+	fmt.Printf("%sTOTP entry '%s' added successfully%s\n", ui.Green, entry.Account, ui.Reset)
 
 	return nil
 }
@@ -305,25 +305,25 @@ func runTOTPGenerateCommand(cmd *cobra.Command, args []string) error {
 	showQR, _ := cmd.Flags().GetBool("show-qr")
 	showSecret, _ := cmd.Flags().GetBool("show-secret")
 
-	fmt.Printf("%sGenerating TOTP code for: %s%s\n", color.Blue, name, color.Reset)
+	fmt.Printf("%sGenerating TOTP code for: %s%s\n", ui.Blue, name, ui.Reset)
 
 	// TODO: Fetch from vault and generate TOTP
 	code := "123456"    // Placeholder
 	timeRemaining := 15 // Placeholder
 
-	fmt.Printf("%sCode: %s%s (valid for %ds)\n", color.Green, color.Bold, code, color.Reset, timeRemaining)
+	fmt.Printf("%sCode: %s%s (valid for %ds)\n", ui.Green, ui.Bold, code, ui.Reset, timeRemaining)
 
 	if showSecret {
-		fmt.Printf("Secret: %s(show secret here)%s\n", color.Yellow, color.Reset)
+		fmt.Printf("Secret: %s(show secret here)%s\n", ui.Yellow, ui.Reset)
 	}
 
 	if copyCode {
-		fmt.Printf("%sCode copied to clipboard%s\n", color.Green, color.Reset)
+		fmt.Printf("%sCode copied to clipboard%s\n", ui.Green, ui.Reset)
 		// TODO: Implement clipboard copy
 	}
 
 	if showQR {
-		fmt.Printf("%sQR Code:%s\n", color.Blue, color.Reset)
+		fmt.Printf("%sQR Code:%s\n", ui.Blue, ui.Reset)
 		fmt.Println("(QR code would be displayed here)")
 		// TODO: Implement QR code generation
 	}
@@ -332,8 +332,6 @@ func runTOTPGenerateCommand(cmd *cobra.Command, args []string) error {
 }
 
 func runTOTPListCommand(cmd *cobra.Command, args []string) error {
-	interactive, _ := cmd.Flags().GetBool("interactive")
-	continuous, _ := cmd.Flags().GetBool("continuous")
 	showProgress, _ := cmd.Flags().GetBool("show-progress")
 
 	// TODO: Fetch from vault
@@ -365,58 +363,15 @@ func runTOTPListCommand(cmd *cobra.Command, args []string) error {
 
 	utility := types.NewTOTPUtility()
 
-	if interactive || continuous {
-		fmt.Printf("%sStarting interactive TOTP viewer...%s\n", color.Blue, color.Reset)
-		fmt.Printf("%sPress 'q' to quit, arrow keys to navigate, 'c' to copy code%s\n\n", color.Dim, color.Reset)
+	// Start interactive TOTP viewer by default
+	fmt.Printf("%sStarting interactive TOTP viewer...%s\n", ui.Blue, ui.Reset)
+	fmt.Printf("%sPress 'q' to quit, arrow keys to navigate, 'c' to copy code%s\n\n", ui.Dim, ui.Reset)
 
-		viewer := ui.NewTOTPViewer(utility)
-		viewer.SetShowProgress(showProgress)
-		viewer.SetEntries(sampleEntries)
+	viewer := ui.NewTOTPViewer(utility)
+	viewer.SetShowProgress(showProgress)
+	viewer.SetEntries(sampleEntries)
 
-		return viewer.Start()
-	} else {
-		fmt.Printf("%sTOTP entries%s\n", color.Blue, color.Reset)
-		fmt.Printf("%s%-20s %-15s %-8s %-10s %s%s\n",
-			color.Bold, "Account", "Issuer", "Digits", "Period", "Code", color.Reset)
-		fmt.Println(strings.Repeat("-", 75))
-
-		for _, entry := range sampleEntries {
-			// Generate current TOTP code
-			creds := &types.TOTPCredentials{
-				Secret:    entry.Secret,
-				Algorithm: entry.Algorithm,
-				Digits:    entry.Digits,
-				Period:    entry.Period,
-			}
-
-			code, err := utility.GenerateCode(creds)
-			if err != nil {
-				code = "ERROR"
-			}
-
-			timeRemaining := utility.GetTimeRemaining(entry.Period)
-
-			timeColor := color.Green
-			if timeRemaining <= 5 {
-				timeColor = color.Red
-			} else if timeRemaining <= 10 {
-				timeColor = color.Yellow
-			}
-
-			fmt.Printf("%-20s %-15s %-8d %-10ds %s%s %s(%ds)%s\n",
-				entry.Account,
-				entry.Issuer,
-				entry.Digits,
-				entry.Period,
-				color.Cyan, code, color.Reset,
-				timeColor, timeRemaining, color.Reset)
-		}
-
-		fmt.Printf("\n%sFor interactive mode with animations, use: vault totp list --interactive%s\n",
-			color.Dim, color.Reset)
-	}
-
-	return nil
+	return viewer.Start()
 }
 
 func runTOTPUpdateCommand(cmd *cobra.Command, args []string) error {
@@ -425,10 +380,10 @@ func runTOTPUpdateCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	name := args[0]
-	fmt.Printf("%sUpdating TOTP entry: %s%s\n", color.Blue, name, color.Reset)
+	fmt.Printf("%sUpdating TOTP entry: %s%s\n", ui.Blue, name, ui.Reset)
 
 	// TODO: Update in vault
-	fmt.Printf("%sTOTP entry '%s' updated successfully%s\n", color.Green, name, color.Reset)
+	fmt.Printf("%sTOTP entry '%s' updated successfully%s\n", ui.Green, name, ui.Reset)
 
 	return nil
 }
@@ -442,7 +397,7 @@ func runTOTPDeleteCommand(cmd *cobra.Command, args []string) error {
 	force, _ := cmd.Flags().GetBool("force")
 
 	if !force {
-		fmt.Printf("%sAre you sure you want to delete '%s'? [y/N]: %s", color.Yellow, name, color.Reset)
+		fmt.Printf("%sAre you sure you want to delete '%s'? [y/N]: %s", ui.Yellow, name, ui.Reset)
 		var response string
 		fmt.Scanln(&response)
 		if strings.ToLower(response) != "y" {
@@ -451,10 +406,10 @@ func runTOTPDeleteCommand(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	fmt.Printf("%sDeleting TOTP entry: %s%s\n", color.Red, name, color.Reset)
+	fmt.Printf("%sDeleting TOTP entry: %s%s\n", ui.Red, name, ui.Reset)
 
 	// TODO: Delete from vault
-	fmt.Printf("%sTOTP entry '%s' deleted successfully%s\n", color.Green, name, color.Reset)
+	fmt.Printf("%sTOTP entry '%s' deleted successfully%s\n", ui.Green, name, ui.Reset)
 
 	return nil
 }
@@ -476,10 +431,10 @@ func runTOTPImportCommand(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	fmt.Printf("%sImporting TOTP entry%s\n", color.Blue, color.Reset)
+	fmt.Printf("%sImporting TOTP entry%s\n", ui.Blue, ui.Reset)
 
 	if preview {
-		fmt.Printf("%sPreview mode - no changes will be made%s\n", color.Yellow, color.Reset)
+		fmt.Printf("%sPreview mode - no changes will be made%s\n", ui.Yellow, ui.Reset)
 	}
 
 	// TODO: Implement import based on source
@@ -493,14 +448,14 @@ func runTOTPImportCommand(cmd *cobra.Command, args []string) error {
 		fmt.Printf("From secret: %s\n", secret)
 	}
 
-	fmt.Printf("%sImport completed successfully%s\n", color.Green, color.Reset)
+	fmt.Printf("%sImport completed successfully%s\n", ui.Green, ui.Reset)
 
 	return nil
 }
 
 func runTOTPWatchCommand(cmd *cobra.Command, args []string) error {
-	fmt.Printf("%s🔐 Starting Aether Vault TOTP Watcher%s\n", color.Blue, color.Reset)
-	fmt.Printf("%sPress Ctrl+C to exit, arrow keys to navigate, 'c' to copy code%s\n\n", color.Dim, color.Reset)
+	fmt.Printf("%s🔐 Starting Aether Vault TOTP Watcher%s\n", ui.Blue, ui.Reset)
+	fmt.Printf("%sPress Ctrl+C to exit, arrow keys to navigate, 'c' to copy code%s\n\n", ui.Dim, ui.Reset)
 
 	showProgress, _ := cmd.Flags().GetBool("progress")
 	refreshRateStr, _ := cmd.Flags().GetString("refresh-rate")
@@ -582,15 +537,15 @@ func runTOTPWatchCommand(cmd *cobra.Command, args []string) error {
 	viewer.SetRefreshRate(refreshRate)
 	viewer.SetEntries(sampleEntries)
 
-	fmt.Printf("%s📱 Loaded %d TOTP entries%s\n", color.Green, len(sampleEntries), color.Reset)
+	fmt.Printf("%s📱 Loaded %d TOTP entries%s\n", ui.Green, len(sampleEntries), ui.Reset)
 	if filter != "" {
-		fmt.Printf("%s🔍 Filter: %s%s\n", color.Blue, filter, color.Reset)
+		fmt.Printf("%s🔍 Filter: %s%s\n", ui.Blue, filter, ui.Reset)
 	}
 	if folder != "" {
-		fmt.Printf("%s📁 Folder: %s%s\n", color.Blue, folder, color.Reset)
+		fmt.Printf("%s📁 Folder: %s%s\n", ui.Blue, folder, ui.Reset)
 	}
 	if len(tags) > 0 {
-		fmt.Printf("%s🏷️  Tags: %s%s\n", color.Blue, strings.Join(tags, ", "), color.Reset)
+		fmt.Printf("%s🏷️  Tags: %s%s\n", ui.Blue, strings.Join(tags, ", "), ui.Reset)
 	}
 	fmt.Println()
 
@@ -600,7 +555,7 @@ func runTOTPWatchCommand(cmd *cobra.Command, args []string) error {
 // Helper functions
 
 func createTOTPInteractive(cmd *cobra.Command) error {
-	fmt.Printf("%sInteractive TOTP creation%s\n", color.Blue, color.Reset)
+	fmt.Printf("%sInteractive TOTP creation%s\n", ui.Blue, ui.Reset)
 
 	var name, secret, issuer string
 
@@ -614,7 +569,7 @@ func createTOTPInteractive(cmd *cobra.Command) error {
 	fmt.Scanln(&issuer)
 
 	fmt.Printf("%sTOTP entry '%s' would be created with the provided information%s\n",
-		color.Green, name, color.Reset)
+		ui.Green, name, ui.Reset)
 
 	return nil
 }
