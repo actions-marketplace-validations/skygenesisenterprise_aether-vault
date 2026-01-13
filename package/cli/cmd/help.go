@@ -24,7 +24,7 @@ Available help topics:
   status   Show current status
   version  Display version information
 
-For more information, visit: https://docs.aethervault.com/cli`,
+For more information, visit: https://wiki.skygenesisenterprise.com/aether-vault/cli`,
 		RunE: runHelpCommand,
 	}
 
@@ -82,9 +82,9 @@ func showGlobalHelp() error {
 	fmt.Printf("  --config string    Config file path\n\n")
 
 	fmt.Printf("LEARN MORE:\n")
-	fmt.Printf("  Documentation: https://docs.aethervault.com/cli\n")
-	fmt.Printf("  GitHub:        https://github.com/aethervault/cli\n")
-	fmt.Printf("  Community:     https://community.aethervault.com\n\n")
+	fmt.Printf("  Documentation: https://wiki.skygenesisenterprise.com/aether-vault/cli\n")
+	fmt.Printf("  GitHub:        https://github.com/skygenesisenterprise/aether-vault\n")
+	fmt.Printf("  Community:     https://skygenesisenterprise.com/discord\n\n")
 
 	fmt.Printf("For command-specific help, use: vault [command] --help\n")
 

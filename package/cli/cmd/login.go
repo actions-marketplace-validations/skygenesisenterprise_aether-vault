@@ -23,7 +23,7 @@ This command will:
 
 	cmd.Flags().String("method", "oauth", "Authentication method (oauth, token)")
 	cmd.Flags().String("token", "", "API token for token-based authentication")
-	cmd.Flags().String("url", "https://cloud.aethervault.com", "Aether Vault cloud URL")
+	cmd.Flags().String("url", "https://vault.skygenesisenterprise.com", "Aether Vault cloud URL")
 
 	return cmd
 }
