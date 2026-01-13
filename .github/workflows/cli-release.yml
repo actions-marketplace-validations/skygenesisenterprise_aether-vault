@@ -1,9 +1,9 @@
-name: CLI Release
+name: Aether Vault CLI Release
 
 on:
   push:
     tags:
-      - "v*"
+      - "v*.*.*-cli"
 
 jobs:
   release:
@@ -38,7 +38,7 @@ jobs:
           VERSION=${{ steps.version.outputs.version }}
           BUILD_TIME=$(date -u '+%Y-%m-%d_%H:%M:%S')
           GIT_COMMIT=${{ github.sha }}
-          LDFLAGS="-ldflags \"-X main.version=$VERSION -X main.buildTime=$BUILD_TIME -X main.gitCommit=$GIT_COMMIT\""
+          LDFLAGS=-ldflags="-X main.version=$VERSION -X main.buildTime=$BUILD_TIME -X main.gitCommit=$GIT_COMMIT"
 
           mkdir -p $BUILD_DIR
 
