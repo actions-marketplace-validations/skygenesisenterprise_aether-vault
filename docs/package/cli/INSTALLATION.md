@@ -1,12 +1,24 @@
-# Installation Guide
+<div align="center">
 
-## Overview
+# 🚀 Aether Vault CLI - Installation Guide
 
-This guide covers various installation methods for Aether Vault CLI, system requirements, and post-installation verification. Choose the installation method that best fits your environment and use case.
+[![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](https://github.com/skygenesisenterprise/aether-vault/blob/main/LICENSE) [![Go](https://img.shields.io/badge/Go-1.25+-blue?style=for-the-badge&logo=go)](https://golang.org/) [![Cobra](https://img.shields.io/badge/Cobra-1.8+-lightgrey?style=for-the-badge&logo=go)](https://github.com/spf13/cobra) [![Viper](https://img.shields.io/badge/Viper-1.16+-green?style=for-the-badge&logo=go)](https://github.com/spf13/viper) [![DevOps](https://img.shields.io/badge/DevOps-Ready-orange?style=for-the-badge&logo=devops)](https://www.devops.com/)
 
-## System Requirements
+**🔧 Complete Installation Guide - Multiple Methods for Every Environment**
 
-### Minimum Requirements
+Comprehensive installation guide covering all supported platforms, installation methods, system requirements, and post-installation verification. Choose the method that best fits your environment and workflow.
+
+[📋 System Requirements](#-system-requirements) • [🚀 Installation Methods](#-installation-methods) • [✅ Verification](#-verification) • [⚙️ Configuration](#️-configuration) • [🔄 Upgrading](#-upgrading) • [🗑️ Uninstallation](#️-uninstallation) • [🔍 Troubleshooting](#-troubleshooting)
+
+[![GitHub stars](https://img.shields.io/github/stars/skygenesisenterprise/aether-vault?style=social)](https://github.com/skygenesisenterprise/aether-vault/stargazers) [![GitHub forks](https://img.shields.io/github/forks/skygenesisenterprise/aether-vault?style=social)](https://github.com/skygenesisenterprise/aether-vault/network)
+
+</div>
+
+---
+
+## 📋 System Requirements
+
+### 🎯 **Minimum Requirements**
 
 - **Operating System**: Linux, macOS, or Windows (WSL2)
 - **Architecture**: x86_64 or ARM64
@@ -14,25 +26,29 @@ This guide covers various installation methods for Aether Vault CLI, system requ
 - **Disk**: 100MB free space
 - **Network**: Internet connection (for cloud mode, optional for local mode)
 
-### Recommended Requirements
+### ⭐ **Recommended Requirements**
 
 - **Operating System**: Linux (Ubuntu 20.04+, CentOS 8+, RHEL 8+) or macOS (11+)
 - **Architecture**: x86_64
 - **Memory**: 1GB RAM
 - **Disk**: 500MB free space
-- **Go**: Version 1.21+ (for building from source)
+- **Go**: Version 1.25+ (for building from source)
 
-### Software Dependencies
+### 🔧 **Software Dependencies**
 
 - **Unix Socket Support**: Required for IPC communication
 - **JSON/YAML Processors**: For configuration management
 - **TLS Libraries**: For secure communication (optional)
+- **Git**: For cloning and version control
+- **Make**: Build automation tool (included with most systems)
 
-## Installation Methods
+---
 
-### Method 1: Binary Download (Recommended)
+## 🚀 Installation Methods
 
-#### Linux (x86_64)
+### 🎯 **Method 1: Binary Download (Recommended)**
+
+#### 🐧 **Linux (x86_64)**
 
 ```bash
 # Download the latest binary
@@ -52,7 +68,7 @@ sudo mv vault /usr/local/bin/
 vault version
 ```
 
-#### Linux (ARM64)
+#### 🐧 **Linux (ARM64)**
 
 ```bash
 # Download the ARM64 binary
@@ -64,7 +80,7 @@ sudo mv vault /usr/local/bin/
 vault version
 ```
 
-#### macOS (Intel)
+#### 🍎 **macOS (Intel)**
 
 ```bash
 # Download the macOS binary
@@ -76,7 +92,7 @@ sudo mv vault /usr/local/bin/
 vault version
 ```
 
-#### macOS (Apple Silicon)
+#### 🍎 **macOS (Apple Silicon)**
 
 ```bash
 # Download the Apple Silicon binary
@@ -88,7 +104,7 @@ sudo mv vault /usr/local/bin/
 vault version
 ```
 
-#### Windows (WSL2)
+#### 🪟 **Windows (WSL2)**
 
 ```bash
 # Inside WSL2, follow Linux instructions
@@ -98,9 +114,9 @@ sudo mv vault /usr/local/bin/
 vault version
 ```
 
-### Method 2: Package Managers
+### 📦 **Method 2: Package Managers**
 
-#### Homebrew (macOS)
+#### 🍺 **Homebrew (macOS)**
 
 ```bash
 # Add the tap (coming soon)
@@ -113,7 +129,7 @@ brew install aether-vault/tap/vault
 vault version
 ```
 
-#### APT (Debian/Ubuntu)
+#### 📦 **APT (Debian/Ubuntu)**
 
 ```bash
 # Add the Aether Vault repository (coming soon)
@@ -130,7 +146,7 @@ sudo apt install aether-vault-cli
 vault version
 ```
 
-#### YUM/DNF (RHEL/CentOS/Fedora)
+#### 📦 **YUM/DNF (RHEL/CentOS/Fedora)**
 
 ```bash
 # Add the Aether Vault repository (coming soon)
@@ -151,7 +167,7 @@ sudo yum install aether-vault-cli
 vault version
 ```
 
-#### Pacman (Arch Linux)
+#### 📦 **Pacman (Arch Linux)**
 
 ```bash
 # Install from AUR (coming soon)
@@ -163,9 +179,9 @@ makepkg -si
 vault version
 ```
 
-### Method 3: Build from Source
+### 🔨 **Method 3: Build from Source**
 
-#### Prerequisites
+#### 📋 **Prerequisites**
 
 ```bash
 # Install Go (if not already installed)
@@ -180,7 +196,7 @@ brew install go
 go version
 ```
 
-#### Build from Git Repository
+#### 🏗️ **Build from Git Repository**
 
 ```bash
 # Clone the repository
@@ -197,7 +213,7 @@ make install
 vault version
 ```
 
-#### Manual Build
+#### 🔧 **Manual Build**
 
 ```bash
 # Clone the repository
@@ -220,9 +236,9 @@ sudo mv vault /usr/local/bin/
 vault version
 ```
 
-### Method 4: Docker
+### 🐳 **Method 4: Docker**
 
-#### Pull Official Image
+#### 📥 **Pull Official Image**
 
 ```bash
 # Pull the official image
@@ -232,7 +248,7 @@ docker pull aether-vault/cli:latest
 docker run --rm -v ~/.aether-vault:/root/.aether-vault aether-vault/cli:latest version
 ```
 
-#### Docker Compose
+#### 🐙 **Docker Compose**
 
 ```yaml
 # docker-compose.yml
@@ -260,9 +276,9 @@ docker-compose up -d
 docker-compose exec vault-cli vault version
 ```
 
-### Method 5: Kubernetes
+### ☸️ **Method 5: Kubernetes**
 
-#### Helm Chart (Coming Soon)
+#### ⛵ **Helm Chart (Coming Soon)**
 
 ```bash
 # Add the Aether Vault Helm repository
@@ -273,7 +289,7 @@ helm repo update
 helm install vault-cli aether-vault/vault-cli
 ```
 
-#### Kubernetes Manifest
+#### 📋 **Kubernetes Manifest**
 
 ```yaml
 # vault-cli-job.yaml
@@ -300,9 +316,11 @@ kubectl get jobs
 kubectl logs job/vault-cli-test
 ```
 
-## Post-Installation Verification
+---
 
-### 1. Basic Verification
+## ✅ Verification
+
+### 🔍 **1. Basic Verification**
 
 ```bash
 # Check version
@@ -313,10 +331,10 @@ vault version
 # Version: 1.0.0
 # Build: abc123def
 # OS/Arch: linux/amd64
-# Go Version: go1.21.0
+# Go Version: go1.25.0
 ```
 
-### 2. Help System
+### 📚 **2. Help System**
 
 ```bash
 # Show main help
@@ -329,7 +347,7 @@ vault capability --help
 vault capability request --help
 ```
 
-### 3. Initialize Environment
+### ⚙️ **3. Initialize Environment**
 
 ```bash
 # Initialize local environment
@@ -343,7 +361,7 @@ vault init
 # ✓ Local environment initialized successfully
 ```
 
-### 4. Start Agent
+### 🚀 **4. Start Agent**
 
 ```bash
 # Start the agent
@@ -360,7 +378,7 @@ vault agent status
 #   Version: 1.0.0
 ```
 
-### 5. Test Capability Request
+### 🔐 **5. Test Capability Request**
 
 ```bash
 # Request a test capability
@@ -384,13 +402,15 @@ vault capability request \
 #   Issuer: aether-vault-agent
 #   TTL: 60 seconds
 #   Max Uses: 100
-#   Issued At: 2024-01-08T10:00:00Z
-#   Expires At: 2024-01-08T10:01:00Z
+#   Issued At: 2025-01-13T10:00:00Z
+#   Expires At: 2025-01-13T10:01:00Z
 ```
 
-## Configuration
+---
 
-### Default Configuration Location
+## ⚙️ Configuration
+
+### 📁 **Default Configuration Location**
 
 The CLI looks for configuration in the following locations (in order):
 
@@ -399,7 +419,7 @@ The CLI looks for configuration in the following locations (in order):
 3. `~/.aether-vault/config.yaml`
 4. `/etc/aether-vault/config.yaml`
 
-### Environment Variables
+### 🌍 **Environment Variables**
 
 ```bash
 # Set common environment variables
@@ -412,9 +432,18 @@ echo 'export VAULT_LOG_LEVEL="info"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-### Shell Completion
+**Available environment variables**:
 
-#### Bash Completion
+- `VAULT_LOG_LEVEL`: Set logging level (debug, info, warn, error)
+- `VAULT_AGENT_SOCKET_PATH`: Custom socket path
+- `VAULT_CONFIG_FILE`: Custom configuration file
+- `VAULT_POLICY_DIR`: Custom policy directory
+- `VAULT_AUDIT_LOG_FILE`: Custom audit log file
+- `VAULT_MODE`: Agent mode (standard, development, production)
+
+### 🐚 **Shell Completion**
+
+#### 🅱️ **Bash Completion**
 
 ```bash
 # Enable bash completion
@@ -422,7 +451,7 @@ echo 'source <(vault completion bash)' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-#### Zsh Completion
+#### 🅰️ **Zsh Completion**
 
 ```bash
 # Enable zsh completion
@@ -430,16 +459,18 @@ echo 'source <(vault completion zsh)' >> ~/.zshrc
 source ~/.zshrc
 ```
 
-#### Fish Completion
+#### 🐟 **Fish Completion**
 
 ```bash
 # Enable fish completion
 vault completion fish > ~/.config/fish/completions/vault.fish
 ```
 
-## Upgrading
+---
 
-### Upgrade Binary Installation
+## 🔄 Upgrading
+
+### 📦 **Upgrade Binary Installation**
 
 ```bash
 # Backup current configuration
@@ -462,7 +493,7 @@ vault version
 vault agent start
 ```
 
-### Upgrade from Source
+### 🔨 **Upgrade from Source**
 
 ```bash
 # Backup configuration
@@ -487,7 +518,7 @@ vault version
 vault agent start
 ```
 
-### Upgrade Configuration
+### ⚙️ **Upgrade Configuration**
 
 ```bash
 # Check if configuration needs migration
@@ -500,9 +531,11 @@ vault agent config --generate --output /tmp/new-config.yaml
 diff ~/.aether-vault/config.yaml /tmp/new-config.yaml
 ```
 
-## Uninstallation
+---
 
-### Remove Binary
+## 🗑️ Uninstallation
+
+### 🗂️ **Remove Binary**
 
 ```bash
 # Stop agent
@@ -515,9 +548,9 @@ sudo rm /usr/local/bin/vault
 rm -rf ~/.aether-vault
 ```
 
-### Package Manager Removal
+### 📦 **Package Manager Removal**
 
-#### Homebrew
+#### 🍺 **Homebrew**
 
 ```bash
 # Remove package
@@ -527,7 +560,7 @@ brew uninstall aether-vault/tap/vault
 brew untap aether-vault/tap
 ```
 
-#### APT
+#### 📦 **APT**
 
 ```bash
 # Remove package
@@ -538,7 +571,7 @@ sudo add-apt-repository --remove "deb [arch=amd64] https://download.aethervault.
 sudo apt update
 ```
 
-#### YUM/DNF
+#### 📦 **YUM/DNF**
 
 ```bash
 # Remove package
@@ -548,7 +581,7 @@ sudo yum remove aether-vault-cli
 sudo rm /etc/yum.repos.d/aether-vault.repo
 ```
 
-### Clean Up
+### 🧹 **Clean Up**
 
 ```bash
 # Remove all data (WARNING: This deletes everything)
@@ -559,11 +592,13 @@ sudo rm -f /etc/systemd/system/vault-agent.service
 sudo systemctl daemon-reload
 ```
 
-## Troubleshooting
+---
 
-### Installation Issues
+## 🔍 Troubleshooting
 
-#### Permission Denied
+### 🚨 **Installation Issues**
+
+#### 🚫 **Permission Denied**
 
 ```bash
 # Problem: Permission denied when moving binary
@@ -576,7 +611,7 @@ echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-#### Command Not Found
+#### 🔍 **Command Not Found**
 
 ```bash
 # Check if vault is in PATH
@@ -590,7 +625,7 @@ source ~/.bashrc
 /usr/local/bin/vault version
 ```
 
-#### Library Dependencies
+#### 📚 **Library Dependencies**
 
 ```bash
 # On Linux, install required libraries
@@ -605,9 +640,9 @@ sudo yum install -y openssl-devel libyaml-devel
 brew install openssl libyaml
 ```
 
-### Runtime Issues
+### ⚡ **Runtime Issues**
 
-#### Agent Won't Start
+#### 🚫 **Agent Won't Start**
 
 ```bash
 # Check for existing agent
@@ -620,7 +655,7 @@ rm -f ~/.aether-vault/agent.sock
 VAULT_LOG_LEVEL=debug vault agent start
 ```
 
-#### Socket Connection Issues
+#### 🔌 **Socket Connection Issues**
 
 ```bash
 # Check socket file permissions
@@ -634,7 +669,7 @@ ls -la ~/.aether-vault/
 chmod 700 ~/.aether-vault/
 ```
 
-#### Configuration Issues
+#### ⚙️ **Configuration Issues**
 
 ```bash
 # Validate configuration
@@ -648,9 +683,9 @@ rm ~/.aether-vault/config.yaml
 vault init
 ```
 
-### Platform-Specific Issues
+### 🖥️ **Platform-Specific Issues**
 
-#### macOS Gatekeeper
+#### 🍎 **macOS Gatekeeper**
 
 ```bash
 # If Gatekeeper blocks the binary
@@ -660,7 +695,7 @@ xattr -d com.apple.quarantine /usr/local/bin/vault
 sudo spctl --add --label "Aether Vault" /usr/local/bin/vault
 ```
 
-#### Windows WSL2
+#### 🪟 **Windows WSL2**
 
 ```bash
 # Inside WSL2, ensure Unix socket support
@@ -671,7 +706,7 @@ sudo apt install -y unixodbc-dev
 wsl.exe --version
 ```
 
-#### SELinux (RHEL/CentOS)
+#### 🔒 **SELinux (RHEL/CentOS)**
 
 ```bash
 # Check SELinux status
@@ -681,9 +716,11 @@ sestatus
 sudo setsebool -P httpd_can_network_connect 1
 ```
 
-## Verification Script
+---
 
-Use this script to verify your installation:
+## 🧪 Verification Script
+
+Use this comprehensive script to verify your installation:
 
 ```bash
 #!/bin/bash
@@ -743,21 +780,25 @@ chmod +x verify-installation.sh
 ./verify-installation.sh
 ```
 
-## Getting Help
+---
 
-### Documentation
+## 📞 Getting Help
 
-- **Complete Documentation**: [https://docs.aethervault.com](https://docs.aethervault.com)
-- **Quick Start**: [QUICK_START.md](QUICK_START.md)
-- **Command Reference**: [COMMANDS\_\*.md](COMMANDS_*.md)
+### 📚 **Documentation**
 
-### Community Support
+- **📖 Complete Documentation**: [https://docs.aethervault.com](https://docs.aethervault.com)
+- **🚀 Quick Start**: [QUICK_START.md](QUICK_START.md)
+- **📋 Command Reference**: [COMMANDS\_\*.md](COMMANDS_*.md)
+- **🏗️ Architecture**: [../ARCHITECTURE_DEEP_DIVE.md](../ARCHITECTURE_DEEP_DIVE.md)
 
-- **GitHub Issues**: [Report bugs](https://github.com/skygenesisenterprise/aether-vault/issues)
-- **Discussions**: [Ask questions](https://github.com/skygenesisenterprise/aether-vault/discussions)
-- **Discord**: [Join community](https://discord.gg/aethervault)
+### 🤝 **Community Support**
 
-### Command Line Help
+- **🐛 GitHub Issues**: [Report bugs](https://github.com/skygenesisenterprise/aether-vault/issues)
+- **💡 Discussions**: [Ask questions](https://github.com/skygenesisenterprise/aether-vault/discussions)
+- **💬 Discord**: [Join community](https://discord.gg/aethervault)
+- **📧 Email Support**: support@skygenesisenterprise.com
+
+### 🖥️ **Command Line Help**
 
 ```bash
 # General help
@@ -769,8 +810,31 @@ vault agent --help
 
 # Subcommand help
 vault capability request --help
+
+# Show version and build info
+vault version --verbose
+
+# Show configuration
+vault config show
+
+# Check system status
+vault status --verbose
 ```
 
 ---
 
-_For detailed configuration and usage, see the [QUICK_START.md](QUICK_START.md) guide._
+<div align="center">
+
+### 🎉 **Successfully Installed Aether Vault CLI!**
+
+[🚀 Quick Start](QUICK_START.md) • [📋 Command Reference](COMMANDS_AGENT.md) • [🔐 CBAC Overview](CBAC_OVERVIEW.md) • [🤝 Get Help](#-getting-help)
+
+---
+
+**🔧 Enterprise-Grade Secret Management with CBAC System!**
+
+**Made with ❤️ by the [Sky Genesis Enterprise](https://skygenesisenterprise.com) team**
+
+_Building modern DevOps security infrastructure_
+
+</div>

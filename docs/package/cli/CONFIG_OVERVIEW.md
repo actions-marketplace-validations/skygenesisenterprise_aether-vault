@@ -1,33 +1,55 @@
-# Configuration Overview
+<div align="center">
 
-## Introduction
+# 🚀 Aether Vault CLI - Configuration Overview
 
-Aether Vault CLI uses a hierarchical configuration system that supports multiple sources, environment-specific overrides, and runtime validation. The configuration system is designed to be secure by default, flexible for different deployment scenarios, and easy to manage at scale.
+[![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](https://github.com/skygenesisenterprise/aether-vault/blob/main/LICENSE) [![Go](https://img.shields.io/badge/Go-1.25+-blue?style=for-the-badge&logo=go)](https://golang.org/) [![Cobra](https://img.shields.io/badge/Cobra-1.8+-lightgrey?style=for-the-badge&logo=go)](https://github.com/spf13/cobra) [![Viper](https://img.shields.io/badge/Viper-1.16+-green?style=for-the-badge&logo=go)](https://github.com/spf13/viper) [![DevOps](https://img.shields.io/badge/DevOps-Ready-orange?style=for-the-badge&logo=devops)](https://www.devops.com/)
 
-## Configuration Hierarchy
+**⚙️ Complete Configuration Guide - Master Your CLI Setup**
+
+Comprehensive configuration guide covering hierarchical configuration system, YAML file structure, environment variables, validation, and security best practices for Aether Vault CLI.
+
+[📋 Configuration Hierarchy](#-configuration-hierarchy) • [📁 File Structure](#-file-structure) • [⚙️ Configuration Sections](#️-configuration-sections) • [🌍 Environment Variables](#-environment-variables) • [✅ Validation](#-validation) • [📝 Templates](#-templates) • [🔒 Security](#-security) • [🔧 Management](#-management)
+
+[![GitHub stars](https://img.shields.io/github/stars/skygenesisenterprise/aether-vault?style=social)](https://github.com/skygenesisenterprise/aether-vault/stargazers) [![GitHub forks](https://img.shields.io/github/forks/skygenesisenterprise/aether-vault?style=social)](https://github.com/skygenesisenterprise/aether-vault/network)
+
+</div>
+
+---
+
+## 📋 Configuration Hierarchy
+
+### 🎯 **Configuration Loading Order**
 
 Configuration is loaded in order of precedence (highest to lowest):
 
-1. **Command Line Flags**: Direct command overrides
-2. **Environment Variables**: `VAULT_*` prefixed variables
-3. **Configuration File**: YAML configuration file
-4. **Default Values**: Built-in secure defaults
+1. **🚩 Command Line Flags**: Direct command overrides
+2. **🌍 Environment Variables**: `VAULT_*` prefixed variables
+3. **📁 Configuration File**: YAML configuration file
+4. **🔧 Default Values**: Built-in secure defaults
+
+### 🔄 **Configuration Flow**
 
 ```
-Command Line Flags
-       ↓
-Environment Variables
-       ↓
-Configuration File
-       ↓
-Default Values
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Command Line  │    │  Environment     │    │  Configuration   │    │  Default Values │
+│   Flags          │◄──►│  Variables       │◄──►│  File (YAML)     │◄──►│  (Built-in)      │
+│  (--config)      │    │  (VAULT_*)       │    │  (config.yaml)   │    │  (Secure)       │
+└─────────────────┘    └──────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │                       │
+         ▼                       ▼                       ▼                       ▼
+   Runtime Overrides        Deployment Settings        User Configuration        Fallback Values
+   Temporary Changes        Container/CI/CD           Persistent Settings        Safe Defaults
 ```
 
-## Configuration File Structure
+---
 
-### Primary Configuration File
+## 📁 File Structure
+
+### 🎯 **Primary Configuration File**
 
 **Location**: `~/.aether-vault/config.yaml`
+
+### 📋 **Complete Configuration Example**
 
 ```yaml
 # Aether Vault CLI Configuration
@@ -96,9 +118,11 @@ ui:
   banner: true
 ```
 
-## Configuration Sections
+---
 
-### 1. Execution Mode
+## ⚙️ Configuration Sections
+
+### 🎯 **1. Execution Mode**
 
 Controls how the CLI operates:
 
@@ -123,7 +147,7 @@ cloud:
 - `local`: Offline operation with local storage
 - `cloud`: Connected mode with cloud synchronization
 
-### 2. Local Storage
+### 🗄️ **2. Local Storage**
 
 Configuration for local data storage:
 
@@ -146,7 +170,7 @@ local:
       location: "~/.aether-vault/backups"
 ```
 
-### 3. Cloud Configuration
+### ☁️ **3. Cloud Configuration**
 
 Settings for cloud-connected mode:
 
@@ -183,7 +207,7 @@ cloud:
     conflict_resolution: "local_wins" # local_wins, cloud_wins, manual
 ```
 
-### 4. Agent Configuration
+### 🤖 **4. Agent Configuration**
 
 Settings for the Aether Vault Agent:
 
@@ -254,7 +278,7 @@ agent:
       - "/status"
 ```
 
-### 5. Policy Engine Configuration
+### 📋 **5. Policy Engine Configuration**
 
 ```yaml
 policy:
@@ -294,7 +318,7 @@ policy:
       packages: ["aether.vault.*"]
 ```
 
-### 6. Audit Configuration
+### 📝 **6. Audit Configuration**
 
 ```yaml
 audit:
@@ -349,7 +373,7 @@ audit:
     min_severity: "info"
 ```
 
-### 7. IPC Configuration
+### 🌐 **7. IPC Configuration**
 
 ```yaml
 ipc:
@@ -389,7 +413,7 @@ ipc:
     keep_alive_timeout: 30
 ```
 
-### 8. UI Configuration
+### 🎨 **8. UI Configuration**
 
 ```yaml
 ui:
@@ -430,9 +454,11 @@ ui:
     max_context_lines: 3
 ```
 
-## Environment Variables
+---
 
-### Core Variables
+## 🌍 Environment Variables
+
+### 🎯 **Core Variables**
 
 | Variable            | Default                       | Description                          |
 | ------------------- | ----------------------------- | ------------------------------------ |
@@ -441,7 +467,7 @@ ui:
 | `VAULT_LOG_LEVEL`   | `info`                        | Log level (debug, info, warn, error) |
 | `VAULT_PATH`        | `~/.aether-vault`             | Vault data directory                 |
 
-### Agent Variables
+### 🤖 **Agent Variables**
 
 | Variable                  | Default                      | Description       |
 | ------------------------- | ---------------------------- | ----------------- |
@@ -450,7 +476,7 @@ ui:
 | `VAULT_AGENT_SOCKET_PATH` | `~/.aether-vault/agent.sock` | Agent socket path |
 | `VAULT_AGENT_LOG_LEVEL`   | `info`                       | Agent log level   |
 
-### Cloud Variables
+### ☁️ **Cloud Variables**
 
 | Variable                    | Default | Description         |
 | --------------------------- | ------- | ------------------- |
@@ -459,7 +485,7 @@ ui:
 | `VAULT_CLOUD_CLIENT_ID`     | -       | OAuth client ID     |
 | `VAULT_CLOUD_CLIENT_SECRET` | -       | OAuth client secret |
 
-### Capability Variables
+### 🔐 **Capability Variables**
 
 | Variable            | Default | Description             |
 | ------------------- | ------- | ----------------------- |
@@ -467,7 +493,7 @@ ui:
 | `VAULT_MAX_TTL`     | `3600`  | Maximum capability TTL  |
 | `VAULT_MAX_USES`    | `100`   | Maximum capability uses |
 
-### Policy Variables
+### 📋 **Policy Variables**
 
 | Variable                    | Default                    | Description         |
 | --------------------------- | -------------------------- | ------------------- |
@@ -475,7 +501,7 @@ ui:
 | `VAULT_POLICY_CACHE_ENABLE` | `true`                     | Enable policy cache |
 | `VAULT_POLICY_CACHE_TTL`    | `300`                      | Policy cache TTL    |
 
-### Audit Variables
+### 📝 **Audit Variables**
 
 | Variable             | Default                     | Description          |
 | -------------------- | --------------------------- | -------------------- |
@@ -483,9 +509,41 @@ ui:
 | `VAULT_AUDIT_FILE`   | `~/.aether-vault/audit.log` | Audit log file       |
 | `VAULT_AUDIT_LEVEL`  | `info`                      | Audit log level      |
 
-## Configuration Validation
+### 💡 **Usage Examples**
 
-### Built-in Validation
+```bash
+# Set core configuration
+export VAULT_MODE="local"
+export VAULT_LOG_LEVEL="debug"
+export VAULT_PATH="/custom/vault/path"
+
+# Configure agent
+export VAULT_AGENT_MODE="hardened"
+export VAULT_AGENT_SOCKET_PATH="/tmp/vault.sock"
+
+# Set cloud configuration
+export VAULT_CLOUD_URL="https://vault.company.com"
+export VAULT_CLOUD_CLIENT_ID="your-client-id"
+
+# Configure capabilities
+export VAULT_DEFAULT_TTL="600"
+export VAULT_MAX_TTL="1800"
+
+# Set policy configuration
+export VAULT_POLICY_DIR="/etc/vault/policies"
+export VAULT_POLICY_CACHE_TTL="600"
+
+# Configure audit logging
+export VAULT_AUDIT_ENABLE="true"
+export VAULT_AUDIT_LEVEL="warn"
+export VAULT_AUDIT_FILE="/var/log/vault/audit.log"
+```
+
+---
+
+## ✅ Validation
+
+### 🔍 **Built-in Validation**
 
 The CLI validates configuration on startup:
 
@@ -495,17 +553,20 @@ vault agent config --validate
 
 # Show validation errors
 vault agent config --validate --verbose
+
+# Validate specific file
+vault agent config --validate --config /path/to/config.yaml
 ```
 
-### Validation Rules
+### 📋 **Validation Rules**
 
-1. **Required Fields**: All required fields must be present
-2. **Type Validation**: Field types must be correct
-3. **Range Validation**: Values must be within acceptable ranges
-4. **Path Validation**: File paths must be accessible
-5. **Security Validation**: Security settings must be safe
+1. **🔧 Required Fields**: All required fields must be present
+2. **📝 Type Validation**: Field types must be correct
+3. **📊 Range Validation**: Values must be within acceptable ranges
+4. **📁 Path Validation**: File paths must be accessible
+5. **🔒 Security Validation**: Security settings must be safe
 
-### Custom Validation
+### 🎯 **Custom Validation**
 
 Add custom validation rules:
 
@@ -522,9 +583,24 @@ validation:
       validation: "directory_exists(policy.directory)"
 ```
 
-## Configuration Templates
+### 🧪 **Validation Examples**
 
-### Development Template
+```bash
+# Validate configuration with detailed output
+vault agent config --validate --verbose
+
+# Test configuration without applying
+vault agent config test --config /path/to/test-config.yaml
+
+# Check specific section
+vault agent config validate --section agent
+```
+
+---
+
+## 📝 Templates
+
+### 🐛 **Development Template**
 
 ```yaml
 # Development Configuration
@@ -555,7 +631,7 @@ ui:
     show_stack_trace: true
 ```
 
-### Production Template
+### 🏭 **Production Template**
 
 ```yaml
 # Production Configuration
@@ -594,7 +670,7 @@ ipc:
     requests_per_second: 50
 ```
 
-### High Security Template
+### 🔒 **High Security Template**
 
 ```yaml
 # High Security Configuration
@@ -644,9 +720,131 @@ ipc:
     requests_per_second: 10
 ```
 
-## Configuration Management
+### 🐳 **Docker Template**
 
-### Configuration Commands
+```yaml
+# Docker/Container Configuration
+version: "1.0"
+mode: "local"
+
+agent:
+  enable: true
+  mode: "standard"
+  socket_path: "/tmp/vault.sock"
+  log_level: "info"
+  capabilities:
+    default_ttl: 300
+    max_ttl: 1800
+
+local:
+  path: "/data/vault"
+  storage:
+    type: "file"
+    encryption:
+      enable: false # Disabled for containers
+
+audit:
+  enable: true
+  log_file: "/data/vault/audit.log"
+  buffer_size: 500
+
+ipc:
+  timeout: 10
+  max_connections: 50
+
+health:
+  enable_checks: true
+  check_interval: 10
+  enable_metrics: true
+  metrics_port: 9090
+```
+
+---
+
+## 🔒 Security
+
+### 🔐 **File Permissions**
+
+```bash
+# Secure configuration file
+chmod 600 ~/.aether-vault/config.yaml
+
+# Secure directory
+chmod 700 ~/.aether-vault/
+
+# Secure agent keys
+chmod 600 ~/.aether-vault/agent.key
+
+# Secure audit logs
+chmod 640 ~/.aether-vault/audit.log
+```
+
+### 🛡️ **Security Best Practices**
+
+#### **🔑 Sensitive Data Management**
+
+- **❌ Avoid Secrets in Config**: Don't store passwords or tokens in config files
+- **✅ Use Environment Variables**: Store sensitive data in environment variables
+- **🔐 Encrypt Storage**: Enable storage encryption for sensitive data
+- **🔑 Key Management**: Use proper key management practices
+
+#### **🚫 Access Control**
+
+```yaml
+# Restrict configuration access
+security:
+  config_file_permissions: "600"
+  directory_permissions: "700"
+  key_file_permissions: "600"
+  audit_file_permissions: "640"
+```
+
+#### **🔒 Encryption Settings**
+
+```yaml
+# Strong encryption configuration
+local:
+  storage:
+    encryption:
+      enable: true
+      algorithm: "aes-256-gcm"
+      key_derivation: "pbkdf2"
+      iterations: 100000
+
+agent:
+  capabilities:
+    signing_algorithm: "ed25519"
+    keys:
+      encryption:
+        enable: true
+        algorithm: "aes-256-gcm"
+
+audit:
+  security:
+    enable_signature: true
+    signature_algorithm: "ed25519"
+    enable_hash_chain: true
+    hash_algorithm: "sha256"
+```
+
+### 🚨 **Security Validation**
+
+```bash
+# Check file permissions
+ls -la ~/.aether-vault/
+
+# Validate security settings
+vault agent config --validate --security
+
+# Audit configuration
+vault agent config audit --security
+```
+
+---
+
+## 🔧 Management
+
+### 📋 **Configuration Commands**
 
 ```bash
 # Show current configuration
@@ -665,7 +863,7 @@ vault config generate --output /path/to/config.yaml
 vault config test --config /path/to/config.yaml
 ```
 
-### Configuration Diff
+### 🔄 **Configuration Diff**
 
 ```bash
 # Compare configurations
@@ -673,54 +871,248 @@ vault config diff /path/to/config1.yaml /path/to/config2.yaml
 
 # Compare with running configuration
 vault config diff /path/to/config.yaml --running
+
+# Show differences in detail
+vault config diff --verbose /path/to/config1.yaml /path/to/config2.yaml
 ```
 
-### Configuration Backup
+### 💾 **Configuration Backup**
 
 ```bash
 # Backup configuration
 vault config backup --output /path/to/backup.yaml
 
+# Backup with timestamp
+vault config backup --output "/backups/config-$(date +%Y%m%d-%H%M%S).yaml"
+
 # Restore configuration
 vault config restore --input /path/to/backup.yaml
+
+# List available backups
+vault config backup list
 ```
 
-## Security Considerations
-
-### File Permissions
+### 🔄 **Configuration Reload**
 
 ```bash
-# Secure configuration file
-chmod 600 ~/.aether-vault/config.yaml
+# Reload configuration
+vault config reload
 
-# Secure directory
-chmod 700 ~/.aether-vault/
+# Reload specific section
+vault config reload --section agent
 
-# Secure agent keys
-chmod 600 ~/.aether-vault/agent.key
+# Force reload
+vault config reload --force
 ```
 
-### Sensitive Data
+### 🧪 **Configuration Testing**
 
-- **Avoid Secrets in Config**: Don't store passwords or tokens in config files
-- **Use Environment Variables**: Store sensitive data in environment variables
-- **Encrypt Storage**: Enable storage encryption for sensitive data
-- **Key Management**: Use proper key management practices
+```bash
+# Test configuration syntax
+vault config test --syntax
 
-### Access Control
+# Test configuration validation
+vault config test --validation
+
+# Test configuration with mock data
+vault config test --mock --data /path/to/test-data.json
+```
+
+---
+
+## 🚀 Advanced Configuration
+
+### 🔧 **Custom Configuration Profiles**
 
 ```yaml
-# Restrict configuration access
-security:
-  config_file_permissions: "600"
-  directory_permissions: "700"
-  key_file_permissions: "600"
-  audit_file_permissions: "644"
+# profiles.yaml
+profiles:
+  development:
+    mode: "local"
+    agent:
+      mode: "development"
+      log_level: "debug"
+    ui:
+      format: "json"
+      colors: true
+
+  production:
+    mode: "local"
+    agent:
+      mode: "hardened"
+      log_level: "warn"
+    audit:
+      security:
+        enable_signature: true
+
+  testing:
+    mode: "local"
+    agent:
+      mode: "development"
+      log_level: "debug"
+    policy:
+      default_decision: "allow"
 ```
 
-## Migration Guide
+```bash
+# Use specific profile
+vault config use-profile development
 
-### From v1.0 to v2.0
+# List available profiles
+vault config profile list
+
+# Show profile details
+vault config profile show development
+```
+
+### 🔄 **Dynamic Configuration**
+
+```yaml
+# Enable dynamic configuration
+dynamic:
+  enable: true
+  sources:
+    - type: "consul"
+      address: "localhost:8500"
+      prefix: "vault/config"
+    - type: "etcd"
+      endpoints: ["localhost:2379"]
+      prefix: "/vault/config"
+  reload:
+    enable: true
+    interval: 30
+    watch: true
+```
+
+### 🌐 **Multi-Environment Configuration**
+
+```yaml
+# Environment-specific configuration
+environments:
+  dev:
+    mode: "local"
+    agent:
+      log_level: "debug"
+    local:
+      path: "./dev-vault"
+
+  staging:
+    mode: "cloud"
+    cloud:
+      url: "https://staging.aethervault.com"
+    agent:
+      log_level: "info"
+
+  prod:
+    mode: "cloud"
+    cloud:
+      url: "https://aethervault.com"
+    agent:
+      mode: "hardened"
+      log_level: "warn"
+```
+
+```bash
+# Set environment
+export VAULT_ENVIRONMENT="prod"
+
+# Load environment-specific config
+vault config load --environment $VAULT_ENVIRONMENT
+```
+
+---
+
+## 🔍 Troubleshooting
+
+### 🚨 **Common Configuration Issues**
+
+#### **📝 Invalid YAML**
+
+```bash
+# Check YAML syntax
+python -c "import yaml; yaml.safe_load(open('$HOME/.aether-vault/config.yaml'))"
+
+# Or use yamllint
+yamllint ~/.aether-vault/config.yaml
+
+# Show YAML errors
+vault config validate --yaml
+```
+
+#### **🔐 Permission Issues**
+
+```bash
+# Check file permissions
+ls -la ~/.aether-vault/
+
+# Fix permissions
+chmod 600 ~/.aether-vault/config.yaml
+chmod 700 ~/.aether-vault/
+
+# Check ownership
+stat ~/.aether-vault/config.yaml
+```
+
+#### **📁 Missing Directories**
+
+```bash
+# Create missing directories
+mkdir -p ~/.aether-vault/policies
+mkdir -p ~/.aether-vault/backups
+mkdir -p ~/.aether-vault/logs
+
+# Set proper permissions
+chmod 700 ~/.aether-vault/policies
+chmod 700 ~/.aether-vault/backups
+```
+
+#### **⚙️ Configuration Validation**
+
+```bash
+# Validate configuration
+vault config validate --verbose
+
+# Check specific section
+vault config show --section agent
+
+# Test configuration
+vault config test --debug
+```
+
+### 🐛 **Debug Configuration**
+
+```bash
+# Enable debug logging
+export VAULT_LOG_LEVEL=debug
+
+# Show loaded configuration
+vault config show --verbose
+
+# Test configuration
+vault config test --debug
+
+# Show configuration hierarchy
+vault config hierarchy
+```
+
+### 📊 **Configuration Diagnostics**
+
+```bash
+# Show configuration diagnostics
+vault config diagnose
+
+# Check configuration health
+vault config health
+
+# Show configuration metrics
+vault config metrics
+```
+
+---
+
+## 📚 Migration Guide
+
+### 🔄 **From v1.0 to v2.0**
 
 **Breaking Changes:**
 
@@ -747,62 +1139,33 @@ sed -i 's/policy\.cache_enabled:/policy.cache.enable:/' "$CONFIG_FILE"
 echo "Configuration migrated successfully"
 ```
 
-## Troubleshooting
-
-### Common Configuration Issues
-
-#### Invalid YAML
+### 🔧 **Automated Migration**
 
 ```bash
-# Check YAML syntax
-python -c "import yaml; yaml.safe_load(open('$HOME/.aether-vault/config.yaml'))"
+# Run automated migration
+vault config migrate --from-version 1.0 --to-version 2.0
 
-# Or use yamllint
-yamllint ~/.aether-vault/config.yaml
-```
+# Preview migration changes
+vault config migrate --dry-run --from-version 1.0 --to-version 2.0
 
-#### Permission Issues
-
-```bash
-# Check file permissions
-ls -la ~/.aether-vault/
-
-# Fix permissions
-chmod 600 ~/.aether-vault/config.yaml
-chmod 700 ~/.aether-vault/
-```
-
-#### Missing Directories
-
-```bash
-# Create missing directories
-mkdir -p ~/.aether-vault/policies
-mkdir -p ~/.aether-vault/backups
-```
-
-#### Configuration Validation
-
-```bash
-# Validate configuration
-vault config validate --verbose
-
-# Check specific section
-vault config show --section agent
-```
-
-### Debug Configuration
-
-```bash
-# Enable debug logging
-export VAULT_LOG_LEVEL=debug
-
-# Show loaded configuration
-vault config show --verbose
-
-# Test configuration
-vault config test --debug
+# Validate migrated configuration
+vault config validate --after-migration
 ```
 
 ---
 
-_See [CONFIG_FILE.md](CONFIG_FILE.md) for detailed file reference, [CONFIG_ENVIRONMENT.md](CONFIG_ENVIRONMENT.md) for environment variables, and [CONFIG_AGENT.md](CONFIG_AGENT.md) for agent-specific configuration._
+<div align="center">
+
+### 🎉 **Master Configuration Management - Complete Control Over Your CLI Setup!**
+
+[🚀 Quick Start](QUICK_START.md) • [🔧 Agent Commands](COMMANDS_AGENT.md) • [🔐 Capability Commands](COMMANDS_CAPABILITY.md) • [🔐 CBAC Overview](CBAC_OVERVIEW.md)
+
+---
+
+**⚙️ Enterprise-Grade Configuration with Comprehensive Security!**
+
+**Made with ❤️ by the [Sky Genesis Enterprise](https://skygenesisenterprise.com) team**
+
+_Building modern DevOps security infrastructure_
+
+</div>

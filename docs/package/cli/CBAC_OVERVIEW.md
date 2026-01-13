@@ -1,36 +1,50 @@
-# CBAC Overview - Capability-Based Access Control
+<div align="center">
 
-## Introduction
+# 🚀 Aether Vault CLI - CBAC Overview
 
-Capability-Based Access Control (CBAC) is Aether Vault's core security model that provides fine-grained, time-limited access control through cryptographic tokens called capabilities. Unlike traditional Role-Based Access Control (RBAC), CBAC focuses on what a token can do rather than who a user is.
+[![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](https://github.com/skygenesisenterprise/aether-vault/blob/main/LICENSE) [![Go](https://img.shields.io/badge/Go-1.25+-blue?style=for-the-badge&logo=go)](https://golang.org/) [![Cobra](https://img.shields.io/badge/Cobra-1.8+-lightgrey?style=for-the-badge&logo=go)](https://github.com/spf13/cobra) [![Viper](https://img.shields.io/badge/Viper-1.16+-green?style=for-the-badge&logo=go)](https://github.com/spf13/viper) [![DevOps](https://img.shields.io/badge/DevOps-Ready-orange?style=for-the-badge&logo=devops)](https://www.devops.com/)
 
-## Core Concepts
+**🔐 Comprehensive CBAC System - Master Modern Access Control**
 
-### What is a Capability?
+Deep dive into Aether Vault's Capability-Based Access Control (CBAC) system. Learn core concepts, capability lifecycle, constraint system, policy integration, and security best practices for modern DevOps workflows.
+
+[📋 Core Concepts](#-core-concepts) • [🔐 Capability Structure](#-capability-structure) • [🎯 Capability Types](#-capability-types) • [🔄 Request Flow](#-request-flow) • [🔒 Security Properties](#-security-properties) • [⛓️ Constraint System](#️-constraint-system) • [📋 Policy Integration](#-policy-integration) • [📝 Audit & Compliance](#-audit--compliance) • [🏆 Best Practices](#-best-practices)
+
+[![GitHub stars](https://img.shields.io/github/stars/skygenesisenterprise/aether-vault?style=social)](https://github.com/skygenesisenterprise/aether-vault/stargazers) [![GitHub forks](https://img.shields.io/github/forks/skygenesisenterprise/aether-vault?style=social)](https://github.com/skygenesisenterprise/aether-vault/network)
+
+</div>
+
+---
+
+## 📋 Core Concepts
+
+### 🎯 **What is a Capability?**
 
 A capability is a cryptographic, self-contained token that grants specific access to resources. Think of it as a digital key that:
 
-- **Is Bearer-Based**: Whoever holds it can use it (like a physical key)
-- **Is Cryptographically Signed**: Cannot be forged or tampered with
-- **Is Time-Limited**: Automatically expires after a short period
-- **Is Scope-Limited**: Grants access only to specific resources and actions
-- **Is Auditable**: Every use is logged immutably
+- **🔑 Is Bearer-Based**: Whoever holds it can use it (like a physical key)
+- **🔒 Is Cryptographically Signed**: Cannot be forged or tampered with
+- **⏰ Is Time-Limited**: Automatically expires after a short period
+- **🎯 Is Scope-Limited**: Grants access only to specific resources and actions
+- **📝 Is Auditable**: Every use is logged immutably
 
-### Capability vs Traditional Access Control
+### 🔄 **CBAC vs Traditional Access Control**
 
-| Aspect             | RBAC (Traditional)                     | CBAC (Aether Vault)                    |
-| ------------------ | -------------------------------------- | -------------------------------------- |
-| **Access Grant**   | User assigned to roles                 | Capability granted for specific action |
-| **Token Type**     | Session cookies, JWTs                  | Cryptographic capabilities             |
-| **Lifetime**       | Hours to days                          | Minutes (5-15 typical)                 |
-| **Scope**          | Broad role permissions                 | Narrow resource-specific permissions   |
-| **Revocation**     | Complex, requires session invalidation | Immediate, capability-specific         |
-| **Audit**          | User action logs                       | Capability usage logs with hash chains |
-| **Security Model** | Trust-based                            | Zero-trust                             |
+| Aspect                | RBAC (Traditional)                     | CBAC (Aether Vault)                    |
+| --------------------- | -------------------------------------- | -------------------------------------- |
+| **🎫 Access Grant**   | User assigned to roles                 | Capability granted for specific action |
+| **🔐 Token Type**     | Session cookies, JWTs                  | Cryptographic capabilities             |
+| **⏰ Lifetime**       | Hours to days                          | Minutes (5-15 typical)                 |
+| **🎯 Scope**          | Broad role permissions                 | Narrow resource-specific permissions   |
+| **🗑️ Revocation**     | Complex, requires session invalidation | Immediate, capability-specific         |
+| **📝 Audit**          | User action logs                       | Capability usage logs with hash chains |
+| **🛡️ Security Model** | Trust-based                            | Zero-trust                             |
 
-## Capability Structure
+---
 
-### Basic Capability
+## 🔐 Capability Structure
+
+### 📋 **Basic Capability**
 
 ```json
 {
@@ -40,8 +54,8 @@ A capability is a cryptographic, self-contained token that grants specific acces
   "actions": ["read"],
   "identity": "app123",
   "issuer": "aether-vault-agent",
-  "issued_at": "2024-01-08T10:00:00Z",
-  "expires_at": "2024-01-08T10:05:00Z",
+  "issued_at": "2025-01-13T10:00:00Z",
+  "expires_at": "2025-01-13T10:05:00Z",
   "ttl": 300,
   "max_uses": 10,
   "used_count": 0,
@@ -49,7 +63,7 @@ A capability is a cryptographic, self-contained token that grants specific acces
 }
 ```
 
-### Capability with Constraints
+### ⛓️ **Capability with Constraints**
 
 ```json
 {
@@ -59,8 +73,8 @@ A capability is a cryptographic, self-contained token that grants specific acces
   "actions": ["read"],
   "identity": "app123",
   "issuer": "aether-vault-agent",
-  "issued_at": "2024-01-08T10:00:00Z",
-  "expires_at": "2024-01-08T10:05:00Z",
+  "issued_at": "2025-01-13T10:00:00Z",
+  "expires_at": "2025-01-13T10:05:00Z",
   "ttl": 300,
   "max_uses": 10,
   "used_count": 0,
@@ -70,7 +84,13 @@ A capability is a cryptographic, self-contained token that grants specific acces
     "timeWindow": {
       "hours": [9, 10, 11, 12, 13, 14, 15, 16, 17],
       "daysOfWeek": [1, 2, 3, 4, 5],
-      "timezones": ["UTC"]
+      "timezones": ["UTC"],
+      "blackoutPeriods": [
+        {
+          "start": "2025-01-13T22:00:00Z",
+          "end": "2025-01-13T06:00:00Z"
+        }
+      ]
     },
     "environment": {
       "container.namespace": "production",
@@ -85,9 +105,29 @@ A capability is a cryptographic, self-contained token that grants specific acces
 }
 ```
 
-## Capability Types
+### 📊 **Capability Fields**
 
-### Read Capability
+| Field         | Type      | Description                                           |
+| ------------- | --------- | ----------------------------------------------------- |
+| `id`          | string    | Unique capability identifier                          |
+| `type`        | string    | Capability type (read, write, delete, execute, admin) |
+| `resource`    | string    | Target resource (e.g., `secret:/db/primary`)          |
+| `actions`     | array     | Allowed actions                                       |
+| `identity`    | string    | Requesting identity                                   |
+| `issuer`      | string    | Capability issuer (typically `aether-vault-agent`)    |
+| `issued_at`   | timestamp | Creation timestamp (ISO 8601)                         |
+| `expires_at`  | timestamp | Expiration timestamp (ISO 8601)                       |
+| `ttl`         | integer   | Time-to-live in seconds                               |
+| `max_uses`    | integer   | Maximum allowed uses                                  |
+| `used_count`  | integer   | Current usage count                                   |
+| `signature`   | string    | Ed25519 cryptographic signature                       |
+| `constraints` | object    | Usage constraints (optional)                          |
+
+---
+
+## 🎯 Capability Types
+
+### 📖 **Read Capability**
 
 Grants read-only access to resources.
 
@@ -103,8 +143,9 @@ vault capability request \
 - Database read operations
 - Configuration file access
 - Secret retrieval for authentication
+- Log file access
 
-### Write Capability
+### ✏️ **Write Capability**
 
 Grants write/modify access to resources.
 
@@ -118,10 +159,11 @@ vault capability request \
 **Use Cases:**
 
 - Configuration updates
-- Secret rotation
 - Data modification
+- Secret rotation
+- Cache updates
 
-### Delete Capability
+### 🗑️ **Delete Capability**
 
 Grants deletion access to resources.
 
@@ -137,10 +179,11 @@ vault capability request \
 - Temporary file cleanup
 - Cache invalidation
 - Data purging
+- Session cleanup
 
-### Execute Capability
+### ⚡ **Execute Capability**
 
-Grants execution access to resources or operations.
+Grants execution access to operations.
 
 ```bash
 vault capability request \
@@ -154,8 +197,9 @@ vault capability request \
 - Deployment operations
 - Script execution
 - Administrative tasks
+- System operations
 
-### Admin Capability
+### 👑 **Admin Capability**
 
 Grants full administrative access to resources.
 
@@ -163,8 +207,8 @@ Grants full administrative access to resources.
 vault capability request \
   --resource "secret:/system/*" \
   --action admin \
-  --ttl 300 \
-  --identity "admin-user"
+  --identity "admin-user" \
+  --ttl 300
 ```
 
 **Use Cases:**
@@ -172,93 +216,93 @@ vault capability request \
 - System administration
 - Emergency access
 - Full resource management
+- Security incident response
 
-## Request Flow
+---
 
-### 1. Identity Authentication
+## 🔄 Request Flow
+
+### 1️⃣ **Identity Authentication**
 
 ```
 Client ──► Agent
-        │
-        │ IPC Connection
-        │ with Authentication
-        ▼
-   Verify Identity
+         │
+         │ IPC Connection
+         │ with Authentication
+         ▼
+    Verify Identity
 ```
 
-### 2. Policy Evaluation
+### 2️⃣ **Policy Evaluation**
 
 ```
 Agent ──► Policy Engine
-        │
-        │ Evaluate Request
-        │ Against Rules
-        ▼
-   Allow/Deny Decision
+         │
+         │ Evaluate Request
+         │ Against Rules
+         ▼
+    Allow/Deny Decision
 ```
 
-### 3. Capability Generation
+### 3️⃣ **Capability Generation**
 
 ```
 Agent ──► Capability Engine
-        │
-        │ Generate Cryptographic
-        │ Token with Constraints
-        ▼
-   Signed Capability
+         │
+         │ Generate Cryptographic
+         │ Token with Constraints
+         ▼
+    Signed Capability
 ```
 
-### 4. Capability Use
-
-```
-Client ──► Agent
-        │
-        │ Present Capability
-        │ for Validation
-        ▼
-   Resource Access
-```
-
-### 5. Audit Logging
+### 4️⃣ **Audit Logging**
 
 ```
 Agent ──► Audit System
-        │
-        │ Log All Events
-        │ with Hash Chain
-        ▼
-   Immutable Record
+         │
+         │ Log Request
+         │ with Hash Chain
+         ▼
+    Immutable Record
 ```
 
-## Security Properties
+---
 
-### Cryptographic Security
+## 🔒 Security Properties
 
-- **Ed25519 Signing**: All capabilities are signed with Ed25519 keys
-- **Tamper-Proof**: Any modification invalidates the signature
-- **Non-Repudiation**: Signature proves authenticity and integrity
+### 🔐 **Cryptographic Security**
 
-### Temporal Security
+- **🔑 Ed25519 Signing**: All capabilities signed with Ed25519 keys
+- **🛡️ Tamper-Proof**: Any modification invalidates signature
+- **🔐 Non-Repudiation**: Proves authenticity and integrity
+- **🔄 Key Rotation**: Automatic key management with rotation
 
-- **Short TTL**: Capabilities expire quickly (default 5 minutes)
-- **Automatic Cleanup**: Expired capabilities are automatically removed
-- **Time Constraints**: Additional time-based restrictions possible
+### ⏰ **Temporal Security**
 
-### Spatial Security
+- **⚡ Short TTL**: Capabilities expire quickly (default 5 minutes)
+- **🧹 Auto-Cleanup**: Automatic removal of expired capabilities
+- **⏰ Time Constraints**: Additional time-based restrictions
+- **🔄 One-Time Use**: Optional single-use capabilities
 
-- **IP Constraints**: Limit use to specific IP addresses
-- **Network Segmentation**: Enforce network-level boundaries
-- **Geographic Restrictions**: Limit by geographic location
+### 🌐 **Spatial Security**
 
-### Usage Security
+- **🏠 IP Constraints**: Restrict to specific IP addresses
+- **🔒 Network Segmentation**: Enforce network boundaries
+- **🗺️ Geographic Restrictions**: Limit by geographic location
+- **🏢 Environment Validation**: Container/host verification
 
-- **Use Limits**: Maximum number of uses per capability
-- **Rate Limiting**: Prevent abuse through rate constraints
-- **One-Time Use**: Optional single-use capabilities
+### 📊 **Usage Security**
 
-## Constraint System
+- **🎯 Use Limits**: Maximum number of uses per capability
+- **🚦 Rate Limiting**: Prevent abuse through rate constraints
+- **📈 Usage Tracking**: Monitor and limit capability consumption
+- **🚨 Anomaly Detection**: Identify suspicious usage patterns
 
-### IP Address Constraints
+---
+
+## ⛓️ Constraint System
+
+### 🏠 **IP Address Constraints**
 
 ```json
 {
@@ -272,9 +316,10 @@ Agent ──► Audit System
 
 - Restrict to specific servers
 - Enforce network segmentation
-- Prevent unauthorized IP access
+- Allow only corporate IP ranges
+- Prevent external access
 
-### Time Window Constraints
+### ⏰ **Time Window Constraints**
 
 ```json
 {
@@ -285,8 +330,8 @@ Agent ──► Audit System
       "timezones": ["UTC", "America/New_York"],
       "blackoutPeriods": [
         {
-          "start": "2024-01-08T12:00:00Z",
-          "end": "2024-01-08T13:00:00Z"
+          "start": "2025-01-13T22:00:00Z",
+          "end": "2025-01-13T06:00:00Z"
         }
       ]
     }
@@ -299,8 +344,9 @@ Agent ──► Audit System
 - Business hours only access
 - Maintenance window restrictions
 - Holiday blackout periods
+- Shift-based access control
 
-### Environment Constraints
+### 🏢 **Environment Constraints**
 
 ```json
 {
@@ -308,7 +354,8 @@ Agent ──► Audit System
     "environment": {
       "container.namespace": "production",
       "host.platform": "linux",
-      "runtime.type": "docker"
+      "runtime.type": "docker",
+      "cloud.region": "us-west-2"
     }
   }
 }
@@ -319,8 +366,9 @@ Agent ──► Audit System
 - Production-only access
 - Platform-specific restrictions
 - Container environment validation
+- Cloud deployment constraints
 
-### Rate Limiting Constraints
+### 📈 **Rate Limiting Constraints**
 
 ```json
 {
@@ -339,12 +387,21 @@ Agent ──► Audit System
 - Prevent API abuse
 - Limit resource consumption
 - Enforce fair usage
+- Protect against DoS attacks
 
-## Policy Integration
+---
 
-### Policy Evaluation
+## 📋 Policy Integration
+
+### 🔄 **Policy Evaluation**
 
 Capabilities are generated only after policy evaluation:
+
+```
+Request → Policy Engine → Rules → Decision → Capability
+```
+
+### 📝 **Policy Result**
 
 ```json
 {
@@ -359,17 +416,11 @@ Capabilities are generated only after policy evaluation:
 }
 ```
 
-### Policy Types
+### 🏛️ **Policy Types**
 
-1. **Resource Policies**: Control access to specific resources
-2. **Identity Policies**: Control what identities can request
-3. **Time Policies**: Control when access is allowed
-4. **Environment Policies**: Control where access can be used
-5. **Composite Policies**: Combine multiple policy types
+#### **1. Resource Policies**
 
-### Policy Examples
-
-**Database Access Policy**
+Control access to specific resources:
 
 ```json
 {
@@ -396,16 +447,82 @@ Capabilities are generated only after policy evaluation:
 }
 ```
 
-## Audit and Compliance
+#### **2. Identity Policies**
 
-### Immutable Audit Trail
+Control what different identities can request:
+
+```json
+{
+  "id": "identity-roles",
+  "name": "Identity Role Policy",
+  "rules": [
+    {
+      "id": "web-app-role",
+      "effect": "allow",
+      "resources": ["secret:/db/*", "secret:/config/*"],
+      "actions": ["read"],
+      "identities": ["web-app:*"],
+      "priority": 100
+    },
+    {
+      "id": "admin-access",
+      "effect": "allow",
+      "resources": ["secret:*"],
+      "actions": ["*"],
+      "identities": ["admin:*"],
+      "priority": 200
+    }
+  ]
+}
+```
+
+#### **3. Time Policies**
+
+Control when access is allowed:
+
+```json
+{
+  "id": "business-hours",
+  "name": "Business Hours Policy",
+  "rules": [
+    {
+      "id": "weekday-access",
+      "effect": "allow",
+      "resources": ["*"],
+      "actions": ["*"],
+      "identities": ["*"],
+      "conditions": [
+        {
+          "type": "time",
+          "operator": "in",
+          "key": "daysOfWeek",
+          "value": [1, 2, 3, 4, 5]
+        },
+        {
+          "type": "time",
+          "operator": "in",
+          "key": "hours",
+          "value": [9, 10, 11, 12, 13, 14, 15, 16, 17]
+        }
+      ],
+      "priority": 100
+    }
+  ]
+}
+```
+
+---
+
+## 📝 Audit & Compliance
+
+### 🔍 **Immutable Audit Trail**
 
 Every capability operation is logged with cryptographic integrity:
 
 ```json
 {
-  "id": "audit_1234567890",
-  "timestamp": "2024-01-08T10:00:00Z",
+  "id": "audit_1234567890_abcdef",
+  "timestamp": "2025-01-13T10:00:00Z",
   "type": "capability_request",
   "category": "security",
   "severity": "info",
@@ -413,207 +530,251 @@ Every capability operation is logged with cryptographic integrity:
   "target_resource": "secret:/db/primary",
   "action": "request:read",
   "outcome": "granted",
-  "capability_id": "cap_1234567890_abcdef",
-  "request_id": "req_1234567890",
+  "capability_id": "cap_1234567890_ghijkl",
+  "request_id": "req_1234567890_abcdef",
   "client": {
     "ip": "10.0.0.100",
     "platform": "linux",
-    "pid": 12345
+    "pid": 12345,
+    "user_agent": "vault-cli/1.0.0"
   },
   "hash": "sha256_hash_of_event",
   "chain_hash": "hash_of_previous_event"
 }
 ```
 
-### Compliance Features
+### 🛡️ **Security Features**
 
-- **SOC 2**: Security controls and audit trails
-- **ISO 27001**: Information security management
-- **GDPR**: Data protection and privacy rights
-- **HIPAA**: Healthcare data security
-- **PCI DSS**: Payment card industry security
+- **🔐 Hash Chaining**: Each event references the previous event's hash
+- **📝 Complete Logging**: All capability lifecycle events logged
+- **🔒 Tamper Evidence**: Any audit modification breaks the chain
+- **📊 Query Interface**: Rich search and filtering capabilities
 
-### Audit Queries
+### 📋 **Compliance Standards**
+
+#### **SOC 2 Compliance**
+
+- Security controls and audit trails
+- Access control monitoring
+- Incident response procedures
+- Configuration management documentation
+
+#### **ISO 27001 Compliance**
+
+- Information security management
+- Access control policies
+- Audit and accountability
+- Cryptographic controls
+
+#### **GDPR Compliance**
+
+- Data protection by design
+- Right to be forgotten (capability revocation)
+- Audit trail for all access
+- Data minimization principles
+
+#### **HIPAA Compliance**
+
+- Healthcare data protection
+- Access controls and audit trails
+- Transaction logging
+- Authentication and authorization
+
+---
+
+## 🏆 Best Practices
+
+### 1️⃣ **Principle of Least Privilege**
 
 ```bash
-# Search for specific capability usage
-vault audit search --capability-id "cap_1234567890"
-
-# Search by identity
-vault audit search --identity "app123" --time-range "2024-01-08:2024-01-09"
-
-# Search denied requests
-vault audit search --outcome "denied" --severity "warning"
-```
-
-## Best Practices
-
-### 1. Principle of Least Privilege
-
-```bash
-# Good: Request only necessary access
+# ✅ Good: Request only necessary access
 vault capability request \
   --resource "secret:/db/primary" \
   --action read \
   --ttl 300
 
-# Avoid: Requesting excessive access
+# ❌ Avoid: Request excessive access
 vault capability request \
   --resource "secret:/db/*" \
   --action admin \
   --ttl 3600
 ```
 
-### 2. Short TTLs
+### 2️⃣ **Short TTLs**
 
 ```bash
-# Good: Minimal TTL for reduced risk
+# ✅ Good: Minimal TTL for reduced risk
 vault capability request \
   --resource "secret:/api/config" \
   --action read \
   --ttl 300
 
-# Avoid: Long TTLs increase risk
+# ❌ Avoid: Long TTLs increase risk
 vault capability request \
   --resource "secret:/api/config" \
   --action read \
   --ttl 3600
 ```
 
-### 3. Specific Constraints
+### 3️⃣ **Specific Constraints**
 
 ```bash
-# Good: Specific constraints for security
+# ✅ Good: Apply specific constraints
 vault capability request \
   --resource "secret:/production/db" \
   --action read \
-  --constraints '{"ipAddresses": ["10.0.0.100"], "timeWindow": {"hours": [9,10,11,12,13,14,15,16,17]}}'
+  --constraints '{
+    "ipAddresses": ["10.0.0.100"],
+    "timeWindow": {"hours": [9,10,11,12,13,14,15,16,17]}
+  }'
 
-# Avoid: No constraints
+# ❌ Avoid: No constraints
 vault capability request \
   --resource "secret:/production/db" \
   --action read
 ```
 
-### 4. Purpose and Context
+### 4️⃣ **Purpose and Context**
 
 ```bash
-# Good: Include purpose for audit trail
+# ✅ Good: Include purpose and context
 vault capability request \
   --resource "secret:/db/primary" \
   --action read \
   --purpose "Database connection for web-app" \
-  --context '{"runtime": {"type": "web-server"}, "version": "1.2.3"}'
+  --context '{
+    "runtime": {"type": "web-server", "version": "1.2.3"},
+    "sourceIP": "10.0.0.100"
+  }'
+
+# ❌ Avoid: Missing audit information
+vault capability request \
+  --resource "secret:/db/primary" \
+  --action read
 ```
 
-### 5. Regular Cleanup
+### 5️⃣ **Regular Cleanup**
 
 ```bash
 # Monitor active capabilities
 vault capability list --status "active"
 
 # Revoke unused capabilities
-vault capability revoke cap_1234567890 --reason "No longer needed"
+vault capability revoke cap_1234567890_abc --reason "No longer needed"
 
-# Review audit logs regularly
-tail -f ~/.aether-vault/audit.log
+# Review audit logs
+tail -f ~/.aether-vault/audit.log | grep "capability_request"
 ```
 
-## Threat Mitigation
+### 6️⃣ **Monitoring and Alerting**
 
-### Capability Compromise
+```bash
+# Set up monitoring
+vault agent status --verbose
 
-| Threat                 | Mitigation                                                 |
-| ---------------------- | ---------------------------------------------------------- |
-| **Stolen Capability**  | Short TTL (5-15 min), IP constraints, immediate revocation |
-| **Replay Attack**      | Timestamp validation, nonce, one-time use options          |
-| **Capability Forgery** | Ed25519 signatures, hash chain verification                |
-| **Man-in-the-Middle**  | IPC over Unix socket, mutual authentication                |
+# Monitor capability usage
+vault capability status --format json | jq '.capability_engine'
 
-### Policy Bypass
+# Alert on anomalies
+vault audit search --severity "warning" --time-range "last-1h"
+```
 
-| Threat                   | Mitigation                                      |
-| ------------------------ | ----------------------------------------------- |
-| **Policy Evasion**       | Centralized policy engine, mandatory evaluation |
-| **Privilege Escalation** | Strict scoping, constraint validation           |
-| **Unauthorized Access**  | Identity verification, context validation       |
+---
 
-### System Attacks
+## 🚨 Threat Mitigation
 
-| Threat                  | Mitigation                                         |
-| ----------------------- | -------------------------------------------------- |
-| **Denial of Service**   | Rate limiting, connection limits, circuit breakers |
-| **Resource Exhaustion** | Use limits, cleanup routines, monitoring           |
-| **Audit Tampering**     | Immutable logs, hash chains, off-site backup       |
+| Threat                      | Mitigation                                                 |
+| --------------------------- | ---------------------------------------------------------- |
+| **🔑 Stolen Capability**    | Short TTL (5-15 min), IP constraints, immediate revocation |
+| **🔄 Replay Attack**        | Timestamp validation, nonce, one-time use options          |
+| **🔐 Capability Forgery**   | Ed25519 signatures, hash chain verification                |
+| **👨‍🔧 Man-in-the-Middle**    | IPC over Unix socket, mutual authentication                |
+| **🛡️ Policy Bypass**        | Centralized policy engine, mandatory evaluation            |
+| **🔝 Privilege Escalation** | Strict scoping, constraint validation                      |
+| **🚫 Unauthorized Access**  | Identity verification, context validation                  |
+| **💥 Denial of Service**    | Rate limiting, connection limits, circuit breakers         |
+| **🔓 Resource Exhaustion**  | Use limits, cleanup routines, monitoring                   |
+| **🗑️ Audit Tampering**      | Immutable logs, hash chains, off-site backup               |
 
-## Migration from RBAC
+---
 
-### Assessment Phase
+## 🔄 Migration from RBAC
 
-1. **Inventory Current Access**: Map existing roles and permissions
-2. **Identify Resources**: Catalog all protected resources
-3. **Analyze Usage Patterns**: Understand typical access patterns
-4. **Define Capability Types**: Create capability type taxonomy
+### 📊 **Assessment Phase**
 
-### Planning Phase
+1. **🔍 Inventory Current Access**: Map existing roles and permissions
+2. **📋 Identify Resources**: Catalog all protected resources
+3. **📈 Analyze Usage Patterns**: Understand typical access patterns
+4. **🎯 Define Capability Types**: Create capability taxonomy
 
-1. **Design Policies**: Create CBAC policies for each resource type
-2. **Define Constraints**: Establish appropriate constraints
-3. **Plan Migration Strategy**: Gradual rollout with fallback
-4. **Prepare Monitoring**: Set up audit and alerting
+### 📋 **Planning Phase**
 
-### Implementation Phase
+1. **🏛️ Design Policies**: Create CBAC policies for each resource type
+2. **⏰ Define Constraints**: Establish appropriate constraint rules
+3. **🔄 Plan Migration Strategy**: Gradual rollout with fallback
+4. **📊 Prepare Monitoring**: Set up audit and alerting
 
-1. **Pilot Program**: Start with non-critical applications
-2. **Parallel Operation**: Run RBAC and CBAC simultaneously
-3. **Gradual Migration**: Migrate applications incrementally
-4. **Validation**: Verify security and functionality
+### 🚀 **Implementation Phase**
 
-### Decommissioning Phase
+1. **🧪 Pilot Program**: Start with non-critical applications
+2. **🔄 Parallel Operation**: Run RBAC and CBAC simultaneously
+3. **📈 Incremental Migration**: Migrate applications incrementally
+4. **✅ Validation**: Verify security and functionality
 
-1. **Monitor RBAC Usage**: Ensure no remaining dependencies
-2. **Remove RBAC Systems**: Decommission old access controls
-3. **Update Documentation**: Reflect new CBAC architecture
-4. **Train Teams**: Educate on CBAC concepts and usage
+### 🏁 **Decommissioning Phase**
 
-## Performance Considerations
+1. **📊 Monitor RBAC Usage**: Ensure no remaining dependencies
+2. **🗑️ Remove RBAC Systems**: Decommission old access controls
+3. **📝 Update Documentation**: Reflect new CBAC architecture
+4. **🧑 Train Teams**: Educate on CBAC concepts and usage
 
-### Capability Generation
+---
 
-- **Signing Performance**: Ed25519 is fast (~3,000 signatures/second)
-- **Cache Policies**: Policy evaluation results cached for 5 minutes
-- **Batch Operations**: Multiple capabilities can be generated efficiently
+## 📈 Performance Considerations
 
-### Validation Performance
+### 🔐 **Capability Generation**
 
-- **Signature Verification**: Fast Ed25519 verification
-- **Constraint Checking**: Optimized constraint evaluation
-- **Memory Usage**: Efficient in-memory capability storage
+- **⚡ Signing Performance**: Ed25519 (~3,000 signatures/second)
+- **🗄️ Policy Caching**: Policy evaluation results cached for 5 minutes
+- **📦 Batch Operations**: Multiple capabilities generated efficiently
+- **🧠 Memory Usage**: Efficient in-memory capability storage
 
-### Storage Performance
+### ✅ **Validation Performance**
 
-- **Local Storage**: File-based storage with indexing
-- **Cleanup Optimization**: Efficient expired capability removal
-- **Compression**: Optional compression for large deployments
+- **🔍 Signature Verification**: Fast Ed25519 verification
+- **⛓️ Constraint Checking**: Optimized constraint evaluation
+- **🔄 Cache Hit Rates**: High cache hit ratio for repeated checks
+- **📊 Batch Validation**: Multiple capabilities validated in one request
 
-### Network Performance
+### 💾 **Storage Performance**
 
-- **IPC Overhead**: Minimal Unix socket overhead
-- **Connection Pooling**: Reuse connections for multiple requests
-- **Batch Validation**: Validate multiple capabilities in one request
+- **📁 Local Storage**: File-based storage with indexing
+- **🧹 Cleanup Optimization**: Efficient expired capability removal
+- **📦 Compression**: Optional compression for large deployments
+- **🔄 Database Integration**: PostgreSQL backend for enterprise deployments
 
-## Comparison with Other Systems
+### 🌐 **Network Performance**
+
+- **💬 IPC Overhead**: Minimal Unix socket overhead
+- **🔄 Connection Pooling**: Reuse connections for multiple requests
+- **📦 Batch Validation**: Validate multiple capabilities in one request
+- **⚡ Async Processing**: Non-blocking I/O for high-throughput scenarios
+
+---
+
+## 🔍 Comparison with Other Systems
 
 ### vs HashiCorp Vault
 
-| Feature             | Aether Vault CBAC       | HashiCorp Vault        |
-| ------------------- | ----------------------- | ---------------------- |
-| **Access Model**    | Capability-based        | Role-based             |
-| **Token Lifetime**  | Minutes (5-15)          | Hours (1-8)            |
-| **Local Operation** | Full offline capability | Limited without server |
-| **Policy Language** | JSON-based              | HCL/Rego               |
-| **Audit Model**     | Immutable hash chains   | Structured logs        |
-| **IPC Protocol**    | Custom Unix socket      | HTTP API               |
+| Feature             | Aether Vault CBAC          | HashiCorp Vault        |
+| ------------------- | -------------------------- | ---------------------- |
+| **Access Model**    | Capability-based           | Role-based             |
+| **Token Type**      | Cryptographic capabilities | JWTs                   |
+| **Lifetime**        | Minutes (5-15)             | Hours (1-8)            |
+| **Local Operation** | Full offline capability    | Limited without server |
+| **Policy Language** | JSON-based rules           | HCL-based policies     |
+| **Audit Model**     | Immutable hash chains      | Structured logs        |
+| **Constraints**     | Built-in constraint system | Custom logic required  |
 
 ### vs OAuth 2.0
 
@@ -622,27 +783,43 @@ tail -f ~/.aether-vault/audit.log
 | **Token Type**        | Capability (custom) | JWT (standard)          |
 | **Scope Granularity** | Resource-specific   | API-scoped              |
 | **Lifetime**          | Minutes             | Hours                   |
-| **Revocation**        | Immediate           | Token list invalidation |
 | **Local Validation**  | Yes                 | Requires introspection  |
 | **Use Case**          | System-to-system    | User-to-system          |
-
-## Future Enhancements
-
-### Planned Features
-
-1. **Distributed Capabilities**: Cross-node capability sharing
-2. **Capability Delegation**: Limited delegation capabilities
-3. **Advanced Constraints**: Machine learning-based anomaly detection
-4. **Quantum-Resistant Signing**: Post-quantum cryptographic algorithms
-5. **Capability Marketplace**: Internal capability exchange system
-
-### Research Areas
-
-1. **Zero-Knowledge Proofs**: Privacy-preserving capability validation
-2. **Homomorphic Encryption**: Encrypted capability evaluation
-3. **Blockchain Integration**: Distributed capability verification
-4. **AI-Driven Policies**: Intelligent policy generation and optimization
+| **Revocation**        | Immediate           | Token list invalidation |
 
 ---
 
-_See [CBAC_ARCHITECTURE.md](CBAC_ARCHITECTURE.md) for detailed architecture, [CBAC_POLICIES.md](CBAC_POLICIES.md) for policy configuration, and [COMMANDS_CAPABILITY.md](../COMMANDS_CAPABILITY.md) for command usage._
+## 🔮 Future Enhancements
+
+### 🚀 **Planned Features**
+
+1. **🌐 Distributed Capabilities**: Cross-node capability sharing
+2. **🔑 Capability Delegation**: Limited delegation capabilities
+3. **🧠 Advanced Constraints**: Machine learning-based anomaly detection
+4. **🔐 Quantum-Resistant Signing**: Post-quantum cryptographic algorithms
+5. **💼 Capability Marketplace**: Internal capability exchange system
+
+### 🔬 **Research Areas**
+
+1. **🔒 Zero-Knowledge Proofs**: Privacy-preserving capability validation
+2. **🔐 Homomorphic Encryption**: Encrypted capability evaluation
+3. **⛓️ Blockchain Integration**: Distributed capability verification
+4. **🤖 AI-Driven Policies**: Intelligent policy generation and optimization
+
+---
+
+<div align="center">
+
+### 🎉 **Master CBAC System - Enterprise-Grade Access Control!**
+
+[🚀 Quick Start](QUICK_START.md) • [🔧 Agent Commands](COMMANDS_AGENT.md) • [🔐 Capability Commands](COMMANDS_CAPABILITY.md) • [⚙️ Configuration](CONFIG_OVERVIEW.md)
+
+---
+
+**🔐 Modern Access Control with Cryptographic Security!**
+
+**Made with ❤️ by the [Sky Genesis Enterprise](https://skygenesisenterprise.com) team**
+
+_Building next-generation DevOps security infrastructure_
+
+</div>
