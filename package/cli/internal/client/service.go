@@ -44,12 +44,12 @@ func (sm *ServiceManager) StartServer(devMode bool, configPath string) error {
 	}
 
 	// Prepare command arguments
-	args := []string{"server"}
+	args := []string{"server", "start"}
 	if devMode {
-		args = append(args, "-dev")
+		args = append(args, "--dev")
 	}
 	if configPath != "" {
-		args = append(args, "-config", configPath)
+		args = append(args, "--config", configPath)
 	}
 
 	var cmd *exec.Cmd

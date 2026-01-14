@@ -49,6 +49,40 @@ type Context struct {
 	Client client.Client
 }
 
+// NewWithoutServer creates a new execution context without starting server
+func NewWithoutServer(cfg *types.Config) (*Context, error) {
+	if cfg == nil {
+		cfg = &types.Config{}
+	}
+
+	// Create runtime info
+	runtimeInfo := &types.RuntimeInfo{
+		OS:        runtime.GOOS,
+		Arch:      runtime.GOARCH,
+		GoVersion: runtime.Version(),
+		Version:   "1.0.0", // TODO: Get from build info
+		Env:       make(map[string]string),
+		Build: &types.BuildInfo{
+			Commit:       "unknown", // TODO: Get from build info
+			Timestamp:    time.Now().Format(time.RFC3339),
+			Environment:  "development", // TODO: Get from build info
+			ToolsVersion: "unknown",     // TODO: Get from build info
+		},
+	}
+
+	// For browser mode, we don't need any client or server
+	// Just create a minimal context
+	ctx := &Context{
+		Mode:    types.LocalMode,
+		Config:  cfg,
+		Runtime: runtimeInfo,
+		Auth:    &types.AuthState{Authenticated: false},
+		Client:  nil, // No client needed for browser mode
+	}
+
+	return ctx, nil
+}
+
 // New creates a new execution context
 func New(cfg *types.Config) (*Context, error) {
 	if cfg == nil {

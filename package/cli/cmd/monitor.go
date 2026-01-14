@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -159,8 +160,16 @@ func runMonitorCommand(cmd *cobra.Command, args []string) error {
 		cfg = config.Defaults()
 	}
 
-	// Create context
-	ctx, err := context.New(cfg)
+	// Create context - skip server startup for browser mode
+	var ctx *context.Context
+	if browser {
+		// Create a minimal context without server for browser mode
+		ctx, err = context.NewWithoutServer(cfg)
+	} else {
+		// Create full context with server for terminal mode
+		ctx, err = context.New(cfg)
+	}
+
 	if err != nil {
 		return fmt.Errorf("failed to create context: %w", err)
 	}
@@ -213,18 +222,18 @@ func (m *VaultMonitor) launchBrowserInterface() error {
 		fmt.Printf("%s🚀 Starting web-based monitoring interface...%s\n", ui.Blue, ui.Reset)
 	}
 
-	// Start web server in background
+	// Start Next.js web client in background
 	go func() {
-		if err := m.startWebServer(); err != nil {
-			fmt.Fprintf(os.Stderr, "Web server error: %v\n", err)
+		if err := m.startWebClient(); err != nil {
+			fmt.Fprintf(os.Stderr, "Web client error: %v\n", err)
 		}
 	}()
 
-	// Wait a moment for server to start
-	time.Sleep(2 * time.Second)
+	// Wait a moment for client to start
+	time.Sleep(3 * time.Second)
 
 	// Open browser
-	url := "http://localhost:8080/monitor"
+	url := "http://localhost:3000"
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "windows":
@@ -249,17 +258,74 @@ func (m *VaultMonitor) launchBrowserInterface() error {
 	return nil
 }
 
-// startWebServer starts the monitoring web server
-func (m *VaultMonitor) startWebServer() error {
-	// This is a placeholder for web server implementation
-	// In a real implementation, you would use a web framework like gin or echo
-	// to serve HTML, CSS, JavaScript, and WebSocket endpoints
-	select {
-	case <-m.StopChan:
-		return nil
-	case <-time.After(time.Hour):
-		return fmt.Errorf("web server timeout")
+// startWebClient starts the Next.js web client
+func (m *VaultMonitor) startWebClient() error {
+	// Get the web package directory
+	webDir := filepath.Join("..", "web")
+	if _, err := os.Stat(webDir); os.IsNotExist(err) {
+		return fmt.Errorf("web package not found at %s", webDir)
 	}
+
+	// Change to web directory
+	originalDir, _ := os.Getwd()
+	if err := os.Chdir(webDir); err != nil {
+		return fmt.Errorf("failed to change to web directory: %w", err)
+	}
+	defer os.Chdir(originalDir)
+
+	// Check if node_modules exists, install dependencies if needed
+	if _, err := os.Stat("node_modules"); os.IsNotExist(err) {
+		if !m.Quiet {
+			fmt.Printf("%s📦 Installing web dependencies...%s\n", ui.Blue, ui.Reset)
+		}
+		cmd := exec.Command("pnpm", "install")
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to install web dependencies: %w", err)
+		}
+	}
+
+	// Start the Next.js development server
+	if !m.Quiet {
+		fmt.Printf("%s🔧 Starting web client...%s\n", ui.Blue, ui.Reset)
+	}
+
+	cmd := exec.Command("pnpm", "dev")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Env = append(os.Environ(),
+		"NODE_ENV=development",
+		"PORT=3000",
+		"NEXT_TELEMETRY_DISABLED=1",
+	)
+
+	// Start the client
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("failed to start web client: %w", err)
+	}
+
+	// Wait for client to be ready
+	time.Sleep(3 * time.Second)
+
+	// Monitor the client process
+	go func() {
+		if err := cmd.Wait(); err != nil {
+			if !m.Quiet {
+				fmt.Fprintf(os.Stderr, "Web client stopped: %v\n", err)
+			}
+		}
+	}()
+
+	// Wait for stop signal
+	<-m.StopChan
+
+	// Terminate the web client
+	if cmd.Process != nil {
+		cmd.Process.Kill()
+	}
+
+	return nil
 }
 
 // exportMetrics exports metrics to a file
