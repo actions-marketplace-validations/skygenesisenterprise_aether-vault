@@ -152,15 +152,12 @@ func runServerStartCommand(cmd *cobra.Command, args []string) error {
 	devMode, _ := cmd.Flags().GetBool("dev")
 	logLevel, _ := cmd.Flags().GetString("log-level")
 
-	// Create service manager
-	serviceManager := client.NewServiceManager()
-
 	// Check if we should run in foreground or as service
 	if os.Getenv("VAULT_SERVER_FG") == "1" {
 		// Run server in foreground (for service mode)
 		config := &ServerConfig{
 			Host:       "127.0.0.1",
-			Port:       8200,
+			Port:       8081,
 			DevMode:    devMode,
 			LogLevel:   logLevel,
 			ConfigPath: configPath,
@@ -184,28 +181,31 @@ func runServerStartCommand(cmd *cobra.Command, args []string) error {
 
 		return server.Start()
 	} else {
-		// Run as service (background)
-		fmt.Println("Starting Aether Vault server service...")
+		// Run native CLI server
+		fmt.Println("Starting Aether Vault CLI server...")
 
-		if serviceManager.IsRunning() {
-			fmt.Println("Vault server is already running")
-			status := serviceManager.GetStatus()
-			if status.Running {
-				fmt.Printf("PID: %d\n", status.PID)
-				fmt.Printf("Logs: %s\n", status.LogFile)
-				fmt.Printf("Server URL: %s\n", serviceManager.GetServerURL())
-			}
-			return nil
+		// Change to server directory and run the native server
+		serverDir := filepath.Join(filepath.Dir(os.Args[0]), "server")
+		if _, err := os.Stat(serverDir); os.IsNotExist(err) {
+			// Try relative path
+			serverDir = "./server"
 		}
 
-		err := serviceManager.StartServer(devMode, configPath)
-		if err != nil {
-			return fmt.Errorf("failed to start server service: %w", err)
-		}
+		cmd := exec.Command("go", "run", filepath.Join(serverDir, "main.go"))
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Stdin = os.Stdin
 
-		fmt.Println("Vault server service started successfully")
-		fmt.Printf("Server URL: %s\n", serviceManager.GetServerURL())
-		fmt.Printf("Use 'vault server stop' to stop the service")
+		// Set environment variables for CLI server
+		cmd.Env = append(os.Environ(),
+			fmt.Sprintf("CLI_SERVER_HOST=127.0.0.1"),
+			fmt.Sprintf("CLI_SERVER_PORT=8081"),
+			fmt.Sprintf("CLI_SERVER_ENV=development"),
+		)
+
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to start CLI server: %w", err)
+		}
 
 		return nil
 	}
