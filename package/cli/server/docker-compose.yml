@@ -1,0 +1,97 @@
+version: "3.8"
+
+services:
+  aether-cli-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aether-cli-server
+    ports:
+      - "8080:8080"
+    environment:
+      - SERVER_ENVIRONMENT=production
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8080
+      - DATABASE_TYPE=postgres
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_USER=aether
+      - DATABASE_PASSWORD=aether_password
+      - DATABASE_NAME=aether_vault
+      - DATABASE_SSL_MODE=disable
+      - JWT_SECRET=your_jwt_secret_key_here
+      - SECURITY_ENCRYPTION_KEY=your_encryption_key_here
+      - SECURITY_KDF_ITERATIONS=100000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - aether-network
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8080/api/v1/system/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: aether-postgres
+    environment:
+      - POSTGRES_USER=aether
+      - POSTGRES_PASSWORD=aether_password
+      - POSTGRES_DB=aether_vault
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - aether-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aether -d aether_vault"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: aether-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - aether-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    command: redis-server --appendonly yes --requirepass redis_password
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  aether-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
