@@ -1,14 +1,15 @@
 packages:
-  - 'app'
-  - 'tools'
-  - 'tests'
-  - 'options'
-  - 'snap'
-  - 'prisma'
-  - 'package/node'
-  - 'package/github'
-  - 'package/vscode'
-  - 'docs'
+  - "app"
+  - "tools"
+  - "tests"
+  - "options"
+  - "snap"
+  - "prisma"
+  - "package/node"
+  - "package/github"
+  - "package/vscode"
+  - "package/cli/web"
+  - "docs"
 
 ignoredBuiltDependencies:
   - sharp

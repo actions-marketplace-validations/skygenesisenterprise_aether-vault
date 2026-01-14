@@ -51,8 +51,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "jose": "^6.1.3",
-    "@skygenesisenterprise/aether-vault": "1.0.12"
+    "jose": "^6.1.3"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
