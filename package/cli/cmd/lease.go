@@ -64,22 +64,6 @@ func newLeaseRevokeCommand() *cobra.Command {
 	return cmd
 }
 
-// newMonitorCommand creates the monitor command
-func newMonitorCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "monitor",
-		Short: "Stream log messages from a Vault server",
-		Long:  `Monitor and stream Vault server logs in real-time.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("Monitoring Vault logs...")
-			fmt.Println("Press Ctrl+C to stop")
-			// TODO: Implement actual log streaming
-			return nil
-		},
-	}
-	return cmd
-}
-
 // newNamespaceCommand creates the namespace command
 func newNamespaceCommand() *cobra.Command {
 	cmd := &cobra.Command{
