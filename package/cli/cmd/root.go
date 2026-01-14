@@ -80,10 +80,6 @@ Quick start:
 	cmd.AddCommand(newProxyCommand())
 	cmd.AddCommand(newSecretsCommand())
 	cmd.AddCommand(newSshCommand())
-	cmd.AddCommand(newTokenCommand())
-	cmd.AddCommand(newTransformCommand())
-	cmd.AddCommand(newTransitCommand())
-	cmd.AddCommand(newVersionHistoryCommand())
 
 	// Add existing commands
 	cmd.AddCommand(newVersionCommand())
