@@ -451,8 +451,8 @@ importers:
         specifier: ^17.2.3
         version: 17.2.3
       fastify:
-        specifier: ^5.6.2
-        version: 5.6.2
+        specifier: ^5.7.0
+        version: 5.7.0
       node-cron:
         specifier: ^4.2.1
         version: 4.2.1
@@ -10584,8 +10584,8 @@ packages:
     resolution: {integrity: sha512-iPeeDKJSWf4IEOasVVrknXpaBV0IApz/gp7S2bb7Z4Lljbl2MGJRqInZiUrQwV16cpzw/D3S5j5Julj/gT52AA==}
     dev: false
 
-  /fastify@5.6.2:
-    resolution: {integrity: sha512-dPugdGnsvYkBlENLhCgX8yhyGCsCPrpA8lFWbTNU428l+YOnLgYHR69hzV8HWPC79n536EqzqQtvhtdaCE0dKg==}
+  /fastify@5.7.0:
+    resolution: {integrity: sha512-EA1WUXWhvo+G3ed9TUm+jd8UYdnSGMpCywM1A1CtZtb+h0cKnLb0t8w3TWPN3/w55JfzKZxd959ENp2nOKnZQw==}
     dependencies:
       '@fastify/ajv-compiler': 4.0.5
       '@fastify/error': 4.2.0
