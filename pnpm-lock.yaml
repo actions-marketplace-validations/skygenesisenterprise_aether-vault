@@ -537,8 +537,8 @@ importers:
         specifier: 16.x
         version: 16.18.126
       '@types/vscode':
-        specifier: ^1.74.0
-        version: 1.107.0
+        specifier: ^1.108.1
+        version: 1.108.1
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -6664,8 +6664,8 @@ packages:
     resolution: {integrity: sha512-jg+97EGIcY9AGHJJRaaPVgetKDsrTgbRjQ5Msgjh/DQKEFl0DtyRr/VCOyD1T2R1MNeWPK/u7JoGhlDZnKBAfA==}
     dev: true
 
-  /@types/vscode@1.107.0:
-    resolution: {integrity: sha512-XS8YE1jlyTIowP64+HoN30OlC1H9xqSlq1eoLZUgFEC8oUTO6euYZxti1xRiLSfZocs4qytTzR6xCBYtioQTCg==}
+  /@types/vscode@1.108.1:
+    resolution: {integrity: sha512-DerV0BbSzt87TbrqmZ7lRDIYaMiqvP8tmJTzW2p49ZBVtGUnGAu2RGQd1Wv4XMzEVUpaHbsemVM5nfuQJj7H6w==}
     dev: true
 
   /@types/yargs-parser@21.0.3:
