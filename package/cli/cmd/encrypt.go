@@ -8,8 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/skygenesisenterprise/aether-vault/package/cli/internal/context"
-	"github.com/skygenesisenterprise/aether-vault/package/cli/server/model"
-	"github.com/skygenesisenterprise/aether-vault/package/cli/server/services"
+	"github.com/skygenesisenterprise/aether-vault/package/cli/internal/services"
 	"github.com/spf13/cobra"
 )
 
@@ -115,8 +114,7 @@ func runEncryptCommand(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get encryption configuration: %w", err)
 	}
 
-	auditService := services.NewAuditService()
-	encryptionService := services.NewEncryptionService(masterKey, kdfSalt, kdfIterations, auditService)
+	encryptionService := services.NewEncryptionService(masterKey, kdfSalt, kdfIterations)
 
 	// Perform encryption
 	result, err := encryptionService.Encrypt(req, userID)
@@ -130,7 +128,7 @@ func runEncryptCommand(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func buildEncryptionRequest(sourcePath string) (*model.EncryptionRequest, error) {
+func buildEncryptionRequest(sourcePath string) (*services.EncryptionRequest, error) {
 	// Build access methods
 	accessMethods, err := buildAccessMethods()
 	if err != nil {
@@ -144,7 +142,7 @@ func buildEncryptionRequest(sourcePath string) (*model.EncryptionRequest, error)
 	}
 
 	// Create request
-	req := &model.EncryptionRequest{
+	req := &services.EncryptionRequest{
 		SourcePath:    sourcePath,
 		OutputPath:    encryptOutputPath,
 		AccessMethods: accessMethods,
@@ -156,13 +154,13 @@ func buildEncryptionRequest(sourcePath string) (*model.EncryptionRequest, error)
 	return req, nil
 }
 
-func buildAccessMethods() ([]model.AccessMethodConfig, error) {
-	var methods []model.AccessMethodConfig
+func buildAccessMethods() ([]services.AccessMethodConfig, error) {
+	var methods []services.AccessMethodConfig
 
 	// Add passphrase method if requested
 	if encryptPassphrase {
-		methods = append(methods, model.AccessMethodConfig{
-			Type: model.AccessMethodTypePassphrase,
+		methods = append(methods, services.AccessMethodConfig{
+			Type: services.AccessMethodTypePassphrase,
 			Name: "passphrase",
 			Config: map[string]interface{}{
 				"iterations": 100000,
@@ -173,8 +171,8 @@ func buildAccessMethods() ([]model.AccessMethodConfig, error) {
 
 	// Add runtime method if requested
 	if encryptRuntime {
-		methods = append(methods, model.AccessMethodConfig{
-			Type: model.AccessMethodTypeRuntime,
+		methods = append(methods, services.AccessMethodConfig{
+			Type: services.AccessMethodTypeRuntime,
 			Name: "runtime",
 			Config: map[string]interface{}{
 				"instance": encryptInstance,
@@ -190,8 +188,8 @@ func buildAccessMethods() ([]model.AccessMethodConfig, error) {
 			return nil, fmt.Errorf("failed to load certificate: %w", err)
 		}
 
-		methods = append(methods, model.AccessMethodConfig{
-			Type: model.AccessMethodTypeCertificate,
+		methods = append(methods, services.AccessMethodConfig{
+			Type: services.AccessMethodTypeCertificate,
 			Name: "certificate-" + filepath.Base(encryptCertificate),
 			Config: map[string]interface{}{
 				"certificate_file": encryptCertificate,
@@ -217,13 +215,13 @@ func buildAccessMethods() ([]model.AccessMethodConfig, error) {
 	return methods, nil
 }
 
-func buildPolicies() ([]model.EncryptionPolicyConfig, error) {
-	var policies []model.EncryptionPolicyConfig
+func buildPolicies() ([]services.EncryptionPolicyConfig, error) {
+	var policies []services.EncryptionPolicyConfig
 
 	// Add TTL policy if specified
 	if encryptTTL != "" {
-		policies = append(policies, model.EncryptionPolicyConfig{
-			Type: model.PolicyTypeTTL,
+		policies = append(policies, services.EncryptionPolicyConfig{
+			Type: services.PolicyTypeTTL,
 			Name: "ttl",
 			Rules: map[string]interface{}{
 				"duration": encryptTTL,
@@ -233,8 +231,8 @@ func buildPolicies() ([]model.EncryptionPolicyConfig, error) {
 
 	// Add environment policy if specified
 	if encryptEnvironment != "" {
-		policies = append(policies, model.EncryptionPolicyConfig{
-			Type: model.PolicyTypeEnvironment,
+		policies = append(policies, services.EncryptionPolicyConfig{
+			Type: services.PolicyTypeEnvironment,
 			Name: "environment",
 			Rules: map[string]interface{}{
 				"environment": encryptEnvironment,
@@ -244,8 +242,8 @@ func buildPolicies() ([]model.EncryptionPolicyConfig, error) {
 
 	// Add instance policy if specified
 	if encryptInstance != "" {
-		policies = append(policies, model.EncryptionPolicyConfig{
-			Type: model.PolicyTypeInstance,
+		policies = append(policies, services.EncryptionPolicyConfig{
+			Type: services.PolicyTypeInstance,
 			Name: "instance",
 			Rules: map[string]interface{}{
 				"instance": encryptInstance,
@@ -255,8 +253,8 @@ func buildPolicies() ([]model.EncryptionPolicyConfig, error) {
 
 	// Add region policy if specified
 	if encryptRegion != "" {
-		policies = append(policies, model.EncryptionPolicyConfig{
-			Type: model.PolicyTypeRegion,
+		policies = append(policies, services.EncryptionPolicyConfig{
+			Type: services.PolicyTypeRegion,
 			Name: "region",
 			Rules: map[string]interface{}{
 				"region": encryptRegion,
@@ -276,51 +274,51 @@ func buildPolicies() ([]model.EncryptionPolicyConfig, error) {
 	return policies, nil
 }
 
-func parsePolicyString(policyStr string) (model.EncryptionPolicyConfig, error) {
+func parsePolicyString(policyStr string) (services.EncryptionPolicyConfig, error) {
 	parts := strings.SplitN(policyStr, "=", 2)
 	if len(parts) != 2 {
-		return model.EncryptionPolicyConfig{}, fmt.Errorf("policy must be in format 'type=value'")
+		return services.EncryptionPolicyConfig{}, fmt.Errorf("policy must be in format 'type=value'")
 	}
 
-	policyType := model.PolicyType(parts[0])
+	policyType := services.PolicyType(parts[0])
 	value := parts[1]
 
 	var rules map[string]interface{}
 	var name string
 
 	switch policyType {
-	case model.PolicyTypeTTL:
+	case services.PolicyTypeTTL:
 		rules = map[string]interface{}{
 			"duration": value,
 		}
 		name = "ttl"
-	case model.PolicyTypeEnvironment:
+	case services.PolicyTypeEnvironment:
 		rules = map[string]interface{}{
 			"environment": value,
 		}
 		name = "environment"
-	case model.PolicyTypeInstance:
+	case services.PolicyTypeInstance:
 		rules = map[string]interface{}{
 			"instance": value,
 		}
 		name = "instance"
-	case model.PolicyTypeRegion:
+	case services.PolicyTypeRegion:
 		rules = map[string]interface{}{
 			"region": value,
 		}
 		name = "region"
 	default:
-		return model.EncryptionPolicyConfig{}, fmt.Errorf("unsupported policy type: %s", policyType)
+		return services.EncryptionPolicyConfig{}, fmt.Errorf("unsupported policy type: %s", policyType)
 	}
 
-	return model.EncryptionPolicyConfig{
+	return services.EncryptionPolicyConfig{
 		Type:  policyType,
 		Name:  name,
 		Rules: rules,
 	}, nil
 }
 
-func displayEncryptionResult(result *model.EncryptionResult) {
+func displayEncryptionResult(result *services.EncryptionResult) {
 	fmt.Println("✅ Encryption completed successfully")
 	fmt.Println()
 

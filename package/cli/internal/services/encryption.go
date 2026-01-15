@@ -3,12 +3,12 @@ package services
 import (
 	"archive/tar"
 	"compress/gzip"
-	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/skygenesisenterprise/aether-vault/package/cli/server/model"
 	"golang.org/x/crypto/pbkdf2"
 )
 
@@ -27,11 +26,10 @@ type EncryptionService struct {
 	masterKey     []byte
 	kdfSalt       []byte
 	kdfIterations int
-	auditService  *AuditService
 }
 
 // NewEncryptionService creates a new encryption service
-func NewEncryptionService(masterKey string, kdfSalt string, kdfIterations int, auditService *AuditService) *EncryptionService {
+func NewEncryptionService(masterKey string, kdfSalt string, kdfIterations int) *EncryptionService {
 	salt := []byte(kdfSalt)
 	key := pbkdf2.Key([]byte(masterKey), salt, kdfIterations, 32, sha256.New)
 
@@ -39,12 +37,135 @@ func NewEncryptionService(masterKey string, kdfSalt string, kdfIterations int, a
 		masterKey:     key,
 		kdfSalt:       salt,
 		kdfIterations: kdfIterations,
-		auditService:  auditService,
 	}
 }
 
+// AccessMethodType represents the type of access method
+type AccessMethodType string
+
+const (
+	AccessMethodTypePassphrase  AccessMethodType = "passphrase"
+	AccessMethodTypeCertificate AccessMethodType = "certificate"
+	AccessMethodTypeRuntime     AccessMethodType = "runtime"
+	AccessMethodTypePolicy      AccessMethodType = "policy"
+)
+
+// PolicyType represents the type of policy
+type PolicyType string
+
+const (
+	PolicyTypeTTL         PolicyType = "ttl"
+	PolicyTypeEnvironment PolicyType = "environment"
+	PolicyTypeInstance    PolicyType = "instance"
+	PolicyTypeRegion      PolicyType = "region"
+	PolicyTypeMultiFactor PolicyType = "multi_factor"
+)
+
+// AccessMethod represents an access method for decrypting an artifact
+type AccessMethod struct {
+	ID           uuid.UUID        `json:"id"`
+	ArtifactID   uuid.UUID        `json:"artifact_id"`
+	Type         AccessMethodType `json:"type"`
+	Name         string           `json:"name"`
+	Config       string           `json:"config"` // JSON config
+	EncryptedKey string           `json:"encrypted_key"`
+	KeyID        string           `json:"key_id"` // For certificate methods
+	IsActive     bool             `json:"is_active"`
+	CreatedAt    time.Time        `json:"created_at"`
+	UpdatedAt    time.Time        `json:"updated_at"`
+}
+
+// EncryptionPolicy represents a policy for encrypted artifacts
+type EncryptionPolicy struct {
+	ID         uuid.UUID  `json:"id"`
+	ArtifactID uuid.UUID  `json:"artifact_id"`
+	Name       string     `json:"name"`
+	Type       PolicyType `json:"type"`
+	Rules      string     `json:"rules"` // JSON rules
+	IsActive   bool       `json:"is_active"`
+	CreatedAt  time.Time  `json:"created_at"`
+	UpdatedAt  time.Time  `json:"updated_at"`
+}
+
+// EncryptedArtifact represents an encrypted artifact
+type EncryptedArtifact struct {
+	ID           uuid.UUID `json:"id"`
+	UserID       uuid.UUID `json:"user_id"`
+	Name         string    `json:"name"`
+	Description  string    `json:"description"`
+	FilePath     string    `json:"file_path"`
+	OriginalPath string    `json:"original_path"`
+	Algorithm    string    `json:"algorithm"`
+	Version      string    `json:"version"`
+	DataKeyHash  string    `json:"data_key_hash"`
+	ContentSize  int64     `json:"content_size"`
+	IsActive     bool      `json:"is_active"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+
+	// Relations
+	AccessMethods []AccessMethod     `json:"access_methods"`
+	Policies      []EncryptionPolicy `json:"policies"`
+}
+
+// AccessMethodConfig represents configuration for an access method
+type AccessMethodConfig struct {
+	Type   AccessMethodType       `json:"type"`
+	Name   string                 `json:"name"`
+	Config map[string]interface{} `json:"config"`
+}
+
+// EncryptionPolicyConfig represents configuration for an encryption policy
+type EncryptionPolicyConfig struct {
+	Type  PolicyType             `json:"type"`
+	Name  string                 `json:"name"`
+	Rules map[string]interface{} `json:"rules"`
+}
+
+// EncryptionRequest represents a request to encrypt data
+type EncryptionRequest struct {
+	SourcePath    string                   `json:"source_path"`
+	OutputPath    string                   `json:"output_path"`
+	AccessMethods []AccessMethodConfig     `json:"access_methods"`
+	Policies      []EncryptionPolicyConfig `json:"policies"`
+	Description   string                   `json:"description"`
+	Compression   bool                     `json:"compression"`
+}
+
+// DecryptionRequest represents a request to decrypt data
+type DecryptionRequest struct {
+	ArtifactPath string             `json:"artifact_path"`
+	OutputPath   string             `json:"output_path"`
+	AccessMethod AccessMethodConfig `json:"access_method"`
+	Force        bool               `json:"force"`
+}
+
+// EncryptionResult represents the result of an encryption operation
+type EncryptionResult struct {
+	ArtifactID    uuid.UUID `json:"artifact_id"`
+	FilePath      string    `json:"file_path"`
+	OriginalSize  int64     `json:"original_size"`
+	EncryptedSize int64     `json:"encrypted_size"`
+	Algorithm     string    `json:"algorithm"`
+	AccessMethods []string  `json:"access_methods"`
+	Policies      []string  `json:"policies"`
+	CreatedAt     time.Time `json:"created_at"`
+}
+
+// DecryptionResult represents the result of a decryption operation
+type DecryptionResult struct {
+	ArtifactID    uuid.UUID `json:"artifact_id"`
+	FilePath      string    `json:"file_path"`
+	OriginalSize  int64     `json:"original_size"`
+	DecryptedSize int64     `json:"decrypted_size"`
+	MethodType    string    `json:"method_type"`
+	Success       bool      `json:"success"`
+	Reason        string    `json:"reason"`
+	CreatedAt     time.Time `json:"created_at"`
+}
+
 // Encrypt encrypts a file or directory according to the request
-func (s *EncryptionService) Encrypt(req *model.EncryptionRequest, userID uuid.UUID) (*model.EncryptionResult, error) {
+func (s *EncryptionService) Encrypt(req *EncryptionRequest, userID uuid.UUID) (*EncryptionResult, error) {
 	// Generate data key
 	dataKey, err := s.generateDataKey()
 	if err != nil {
@@ -77,7 +198,7 @@ func (s *EncryptionService) Encrypt(req *model.EncryptionRequest, userID uuid.UU
 	}
 
 	// Process access methods
-	accessMethods := make([]model.AccessMethod, 0, len(req.AccessMethods))
+	accessMethods := make([]AccessMethod, 0, len(req.AccessMethods))
 	for _, methodConfig := range req.AccessMethods {
 		method, err := s.createAccessMethod(methodConfig, dataKey)
 		if err != nil {
@@ -87,7 +208,7 @@ func (s *EncryptionService) Encrypt(req *model.EncryptionRequest, userID uuid.UU
 	}
 
 	// Process policies
-	policies := make([]model.EncryptionPolicy, 0, len(req.Policies))
+	policies := make([]EncryptionPolicy, 0, len(req.Policies))
 	for _, policyConfig := range req.Policies {
 		policy, err := s.createEncryptionPolicy(policyConfig)
 		if err != nil {
@@ -97,7 +218,7 @@ func (s *EncryptionService) Encrypt(req *model.EncryptionRequest, userID uuid.UU
 	}
 
 	// Create artifact metadata
-	artifact := &model.EncryptedArtifact{
+	artifact := &EncryptedArtifact{
 		ID:            uuid.New(),
 		UserID:        userID,
 		Name:          filepath.Base(req.SourcePath),
@@ -133,7 +254,7 @@ func (s *EncryptionService) Encrypt(req *model.EncryptionRequest, userID uuid.UU
 	}
 
 	// Create result
-	result := &model.EncryptionResult{
+	result := &EncryptionResult{
 		ArtifactID:    artifact.ID,
 		FilePath:      req.OutputPath,
 		OriginalSize:  artifact.ContentSize,
@@ -144,19 +265,11 @@ func (s *EncryptionService) Encrypt(req *model.EncryptionRequest, userID uuid.UU
 		CreatedAt:     artifact.CreatedAt,
 	}
 
-	// Log audit event
-	if s.auditService != nil {
-		metadata := map[string]interface{}{
-			"message": fmt.Sprintf("Source: %s, Methods: %v", req.SourcePath, result.AccessMethods),
-		}
-		s.auditService.LogAction(context.Background(), userID, "artifact_encrypted", "artifact", artifact.ID, true, metadata)
-	}
-
 	return result, nil
 }
 
 // Decrypt decrypts an artifact according to the request
-func (s *EncryptionService) Decrypt(req *model.DecryptionRequest, userID uuid.UUID) (*model.DecryptionResult, error) {
+func (s *EncryptionService) Decrypt(req *DecryptionRequest, userID uuid.UUID) (*DecryptionResult, error) {
 	// Load artifact
 	artifact, err := s.loadArtifact(req.ArtifactPath)
 	if err != nil {
@@ -180,37 +293,18 @@ func (s *EncryptionService) Decrypt(req *model.DecryptionRequest, userID uuid.UU
 	// Find and validate access method
 	accessMethod, err := s.findAccessMethod(artifact, req.AccessMethod)
 	if err != nil {
-		// Log failed attempt
-		if s.auditService != nil {
-			metadata := map[string]interface{}{
-				"message": fmt.Sprintf("Method: %s, Reason: %s", req.AccessMethod.Type, err.Error()),
-			}
-			s.auditService.LogAction(context.Background(), userID, "artifact_decrypt_failed", "artifact", artifact.ID, false, metadata)
-		}
 		return nil, err
 	}
 
 	// Decrypt data key
 	dataKey, err := s.decryptDataKey(accessMethod, req.AccessMethod)
 	if err != nil {
-		if s.auditService != nil {
-			metadata := map[string]interface{}{
-				"message": fmt.Sprintf("Method: %s, Reason: %s", req.AccessMethod.Type, err.Error()),
-			}
-			s.auditService.LogAction(context.Background(), userID, "artifact_decrypt_failed", "artifact", artifact.ID, false, metadata)
-		}
 		return nil, fmt.Errorf("failed to decrypt data key: %w", err)
 	}
 
 	// Validate policies
 	err = s.validatePolicies(artifact.Policies, userID)
 	if err != nil {
-		if s.auditService != nil {
-			metadata := map[string]interface{}{
-				"message": fmt.Sprintf("Policy validation failed: %s", err.Error()),
-			}
-			s.auditService.LogAction(context.Background(), userID, "artifact_decrypt_failed", "artifact", artifact.ID, false, metadata)
-		}
 		return nil, fmt.Errorf("policy validation failed: %w", err)
 	}
 
@@ -218,24 +312,12 @@ func (s *EncryptionService) Decrypt(req *model.DecryptionRequest, userID uuid.UU
 	contentPath := filepath.Join(tempDir, "content.tar.gz")
 	err = s.decryptFile(encryptedContentPath, contentPath, dataKey)
 	if err != nil {
-		if s.auditService != nil {
-			metadata := map[string]interface{}{
-				"message": fmt.Sprintf("Content decryption failed: %s", err.Error()),
-			}
-			s.auditService.LogAction(context.Background(), userID, "artifact_decrypt_failed", "artifact", artifact.ID, false, metadata)
-		}
 		return nil, fmt.Errorf("failed to decrypt content: %w", err)
 	}
 
 	// Extract archive
 	err = s.extractArchive(contentPath, req.OutputPath)
 	if err != nil {
-		if s.auditService != nil {
-			metadata := map[string]interface{}{
-				"message": fmt.Sprintf("Archive extraction failed: %s", err.Error()),
-			}
-			s.auditService.LogAction(context.Background(), userID, "artifact_decrypt_failed", "artifact", artifact.ID, false, metadata)
-		}
 		return nil, fmt.Errorf("failed to extract archive: %w", err)
 	}
 
@@ -246,7 +328,7 @@ func (s *EncryptionService) Decrypt(req *model.DecryptionRequest, userID uuid.UU
 	}
 
 	// Create result
-	result := &model.DecryptionResult{
+	result := &DecryptionResult{
 		ArtifactID:    artifact.ID,
 		FilePath:      req.OutputPath,
 		OriginalSize:  artifact.ContentSize,
@@ -254,14 +336,6 @@ func (s *EncryptionService) Decrypt(req *model.DecryptionRequest, userID uuid.UU
 		MethodType:    string(accessMethod.Type),
 		Success:       true,
 		CreatedAt:     time.Now(),
-	}
-
-	// Log successful decryption
-	if s.auditService != nil {
-		metadata := map[string]interface{}{
-			"message": fmt.Sprintf("Method: %s, Output: %s", accessMethod.Type, req.OutputPath),
-		}
-		s.auditService.LogAction(context.Background(), userID, "artifact_decrypted", "artifact", artifact.ID, true, metadata)
 	}
 
 	return result, nil
@@ -534,8 +608,8 @@ func (s *EncryptionService) extractArchive(archivePath, outputPath string) error
 	return nil
 }
 
-func (s *EncryptionService) createAccessMethod(config model.AccessMethodConfig, dataKey []byte) (*model.AccessMethod, error) {
-	method := &model.AccessMethod{
+func (s *EncryptionService) createAccessMethod(config AccessMethodConfig, dataKey []byte) (*AccessMethod, error) {
+	method := &AccessMethod{
 		ID:        uuid.New(),
 		Type:      config.Type,
 		Name:      config.Name,
@@ -546,18 +620,18 @@ func (s *EncryptionService) createAccessMethod(config model.AccessMethodConfig, 
 	}
 
 	switch config.Type {
-	case model.AccessMethodTypePassphrase:
+	case AccessMethodTypePassphrase:
 		return s.createPassphraseMethod(method, config, dataKey)
-	case model.AccessMethodTypeCertificate:
+	case AccessMethodTypeCertificate:
 		return s.createCertificateMethod(method, config, dataKey)
-	case model.AccessMethodTypeRuntime:
+	case AccessMethodTypeRuntime:
 		return s.createRuntimeMethod(method, config, dataKey)
 	default:
 		return nil, fmt.Errorf("unsupported access method type: %s", config.Type)
 	}
 }
 
-func (s *EncryptionService) createPassphraseMethod(method *model.AccessMethod, config model.AccessMethodConfig, dataKey []byte) (*model.AccessMethod, error) {
+func (s *EncryptionService) createPassphraseMethod(method *AccessMethod, config AccessMethodConfig, dataKey []byte) (*AccessMethod, error) {
 	// Generate salt for PBKDF2
 	salt := make([]byte, 32)
 	if _, err := rand.Read(salt); err != nil {
@@ -606,12 +680,12 @@ func (s *EncryptionService) createPassphraseMethod(method *model.AccessMethod, c
 	return method, nil
 }
 
-func (s *EncryptionService) createCertificateMethod(method *model.AccessMethod, config model.AccessMethodConfig, dataKey []byte) (*model.AccessMethod, error) {
+func (s *EncryptionService) createCertificateMethod(method *AccessMethod, config AccessMethodConfig, dataKey []byte) (*AccessMethod, error) {
 	// TODO: Implement certificate-based encryption
 	return nil, fmt.Errorf("certificate method not yet implemented")
 }
 
-func (s *EncryptionService) createRuntimeMethod(method *model.AccessMethod, config model.AccessMethodConfig, dataKey []byte) (*model.AccessMethod, error) {
+func (s *EncryptionService) createRuntimeMethod(method *AccessMethod, config AccessMethodConfig, dataKey []byte) (*AccessMethod, error) {
 	// Encrypt with runtime master key
 	encryptedKey, err := s.encryptWithMasterKey(dataKey)
 	if err != nil {
@@ -621,8 +695,8 @@ func (s *EncryptionService) createRuntimeMethod(method *model.AccessMethod, conf
 	return method, nil
 }
 
-func (s *EncryptionService) createEncryptionPolicy(config model.EncryptionPolicyConfig) (*model.EncryptionPolicy, error) {
-	policy := &model.EncryptionPolicy{
+func (s *EncryptionService) createEncryptionPolicy(config EncryptionPolicyConfig) (*EncryptionPolicy, error) {
+	policy := &EncryptionPolicy{
 		ID:        uuid.New(),
 		Type:      config.Type,
 		Name:      config.Name,
@@ -698,7 +772,7 @@ func (s *EncryptionService) configToJSON(config map[string]interface{}) string {
 	return string(data)
 }
 
-func (s *EncryptionService) getAccessMethodNames(methods []model.AccessMethod) []string {
+func (s *EncryptionService) getAccessMethodNames(methods []AccessMethod) []string {
 	names := make([]string, len(methods))
 	for i, method := range methods {
 		names[i] = method.Name
@@ -706,7 +780,7 @@ func (s *EncryptionService) getAccessMethodNames(methods []model.AccessMethod) [
 	return names
 }
 
-func (s *EncryptionService) getPolicyNames(policies []model.EncryptionPolicy) []string {
+func (s *EncryptionService) getPolicyNames(policies []EncryptionPolicy) []string {
 	names := make([]string, len(policies))
 	for i, policy := range policies {
 		names[i] = policy.Name
@@ -714,32 +788,121 @@ func (s *EncryptionService) getPolicyNames(policies []model.EncryptionPolicy) []
 	return names
 }
 
-func (s *EncryptionService) createArtifactFile(artifact *model.EncryptedArtifact, encryptedContentPath, tempDir string) error {
-	// TODO: Implement artifact file creation with proper format
-	// For now, just copy the encrypted content
-	return os.Rename(encryptedContentPath, artifact.FilePath)
+func (s *EncryptionService) createArtifactFile(artifact *EncryptedArtifact, encryptedContentPath, tempDir string) error {
+	// Create artifact with Aether Vault format
+	outputFile, err := os.Create(artifact.FilePath)
+	if err != nil {
+		return err
+	}
+	defer outputFile.Close()
+
+	// Write AVA header
+	header := []byte("AVA\000")
+	if _, err := outputFile.Write(header); err != nil {
+		return err
+	}
+
+	// Write metadata JSON
+	metadata, err := json.Marshal(artifact)
+	if err != nil {
+		return err
+	}
+
+	// Write metadata length (4 bytes)
+	metadataLen := uint32(len(metadata))
+	if err := binary.Write(outputFile, binary.BigEndian, metadataLen); err != nil {
+		return err
+	}
+
+	// Write metadata
+	if _, err := outputFile.Write(metadata); err != nil {
+		return err
+	}
+
+	// Copy encrypted content
+	contentFile, err := os.Open(encryptedContentPath)
+	if err != nil {
+		return err
+	}
+	defer contentFile.Close()
+
+	_, err = io.Copy(outputFile, contentFile)
+	return err
 }
 
-func (s *EncryptionService) loadArtifact(artifactPath string) (*model.EncryptedArtifact, error) {
-	// TODO: Implement artifact loading from file
-	// For now, return a mock artifact
-	return &model.EncryptedArtifact{
-		ID:        uuid.New(),
-		Algorithm: "AES-256-GCM",
-		Version:   "1.0",
-		IsActive:  true,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}, nil
+func (s *EncryptionService) loadArtifact(artifactPath string) (*EncryptedArtifact, error) {
+	file, err := os.Open(artifactPath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	// Check AVA header
+	header := make([]byte, 4)
+	if _, err := file.Read(header); err != nil {
+		return nil, err
+	}
+
+	if string(header) != "AVA\000" {
+		return nil, fmt.Errorf("invalid artifact format")
+	}
+
+	// Read metadata length
+	var metadataLen uint32
+	if err := binary.Read(file, binary.BigEndian, &metadataLen); err != nil {
+		return nil, err
+	}
+
+	// Read metadata
+	metadata := make([]byte, metadataLen)
+	if _, err := file.Read(metadata); err != nil {
+		return nil, err
+	}
+
+	// Parse metadata
+	var artifact EncryptedArtifact
+	if err := json.Unmarshal(metadata, &artifact); err != nil {
+		return nil, err
+	}
+
+	return &artifact, nil
 }
 
 func (s *EncryptionService) extractEncryptedContent(artifactPath, outputPath string) error {
-	// TODO: Implement content extraction from artifact
-	// For now, just copy the file
-	return os.Rename(artifactPath, outputPath)
+	file, err := os.Open(artifactPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Skip AVA header (4 bytes)
+	if _, err := file.Seek(4, io.SeekStart); err != nil {
+		return err
+	}
+
+	// Read metadata length
+	var metadataLen uint32
+	if err := binary.Read(file, binary.BigEndian, &metadataLen); err != nil {
+		return err
+	}
+
+	// Skip metadata
+	if _, err := file.Seek(int64(4+4+metadataLen), io.SeekStart); err != nil {
+		return err
+	}
+
+	// Copy encrypted content to output
+	outputFile, err := os.Create(outputPath)
+	if err != nil {
+		return err
+	}
+	defer outputFile.Close()
+
+	_, err = io.Copy(outputFile, file)
+	return err
 }
 
-func (s *EncryptionService) findAccessMethod(artifact *model.EncryptedArtifact, config model.AccessMethodConfig) (*model.AccessMethod, error) {
+func (s *EncryptionService) findAccessMethod(artifact *EncryptedArtifact, config AccessMethodConfig) (*AccessMethod, error) {
 	for _, method := range artifact.AccessMethods {
 		if method.Type == config.Type && method.IsActive {
 			return &method, nil
@@ -748,16 +911,16 @@ func (s *EncryptionService) findAccessMethod(artifact *model.EncryptedArtifact, 
 	return nil, fmt.Errorf("no valid access method found for type: %s", config.Type)
 }
 
-func (s *EncryptionService) decryptDataKey(method *model.AccessMethod, config model.AccessMethodConfig) ([]byte, error) {
+func (s *EncryptionService) decryptDataKey(method *AccessMethod, config AccessMethodConfig) ([]byte, error) {
 	encryptedKey, err := base64.StdEncoding.DecodeString(method.EncryptedKey)
 	if err != nil {
 		return nil, err
 	}
 
 	switch method.Type {
-	case model.AccessMethodTypeRuntime:
+	case AccessMethodTypeRuntime:
 		return s.decryptWithMasterKey(encryptedKey)
-	case model.AccessMethodTypePassphrase:
+	case AccessMethodTypePassphrase:
 		// Get passphrase from config
 		passphrase, ok := config.Config["passphrase"].(string)
 		if !ok || passphrase == "" {
@@ -814,7 +977,7 @@ func (s *EncryptionService) decryptDataKey(method *model.AccessMethod, config mo
 	}
 }
 
-func (s *EncryptionService) validatePolicies(policies []model.EncryptionPolicy, userID uuid.UUID) error {
+func (s *EncryptionService) validatePolicies(policies []EncryptionPolicy, userID uuid.UUID) error {
 	// TODO: Implement policy validation
 	return nil
 }

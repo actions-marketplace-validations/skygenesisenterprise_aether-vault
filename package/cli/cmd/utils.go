@@ -13,44 +13,44 @@ import (
 	"strings"
 	"time"
 
-	"github.com/skygenesisenterprise/aether-vault/package/cli/server/model"
+	"github.com/skygenesisenterprise/aether-vault/package/cli/internal/services"
 )
 
 // parseAccessMethodString parses an access method string in format "type[:config]"
-func parseAccessMethodString(methodStr string) (model.AccessMethodConfig, error) {
+func parseAccessMethodString(methodStr string) (services.AccessMethodConfig, error) {
 	parts := strings.SplitN(methodStr, ":", 2)
 	if len(parts) == 0 {
-		return model.AccessMethodConfig{}, fmt.Errorf("invalid method format")
+		return services.AccessMethodConfig{}, fmt.Errorf("invalid method format")
 	}
 
-	methodType := model.AccessMethodType(parts[0])
+	methodType := services.AccessMethodType(parts[0])
 	var config map[string]interface{}
 
 	switch methodType {
-	case model.AccessMethodTypePassphrase:
+	case services.AccessMethodTypePassphrase:
 		config = map[string]interface{}{
 			"iterations": 100000,
 		}
-	case model.AccessMethodTypeRuntime:
+	case services.AccessMethodTypeRuntime:
 		config = map[string]interface{}{}
-	case model.AccessMethodTypeCertificate:
+	case services.AccessMethodTypeCertificate:
 		if len(parts) < 2 {
-			return model.AccessMethodConfig{}, fmt.Errorf("certificate method requires certificate file")
+			return services.AccessMethodConfig{}, fmt.Errorf("certificate method requires certificate file")
 		}
 		certFile := parts[1]
 		certInfo, err := getCertificateInfo(certFile)
 		if err != nil {
-			return model.AccessMethodConfig{}, fmt.Errorf("failed to load certificate: %w", err)
+			return services.AccessMethodConfig{}, fmt.Errorf("failed to load certificate: %w", err)
 		}
 		config = map[string]interface{}{
 			"certificate_file": certFile,
 			"key_id":           certInfo.KeyID,
 		}
 	default:
-		return model.AccessMethodConfig{}, fmt.Errorf("unsupported access method type: %s", methodType)
+		return services.AccessMethodConfig{}, fmt.Errorf("unsupported access method type: %s", methodType)
 	}
 
-	return model.AccessMethodConfig{
+	return services.AccessMethodConfig{
 		Type:   methodType,
 		Name:   string(methodType),
 		Config: config,

@@ -7,8 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/skygenesisenterprise/aether-vault/package/cli/internal/context"
-	"github.com/skygenesisenterprise/aether-vault/package/cli/server/model"
-	"github.com/skygenesisenterprise/aether-vault/package/cli/server/services"
+	"github.com/skygenesisenterprise/aether-vault/package/cli/internal/services"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -72,6 +71,13 @@ func runDecryptCommand(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("artifact file does not exist: %s", artifactPath)
 	}
 
+	// Display artifact info before asking for password
+	fmt.Printf("📦 Artifact: %s\n", artifactPath)
+	if err := displayQuickArtifactInfo(artifactPath); err != nil {
+		fmt.Printf("⚠️  Warning: Could not read artifact metadata: %v\n", err)
+	}
+	fmt.Println()
+
 	// Create execution context
 	_, err := context.New(nil)
 	if err != nil {
@@ -93,10 +99,10 @@ func runDecryptCommand(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get encryption configuration: %w", err)
 	}
 
-	auditService := services.NewAuditService()
-	encryptionService := services.NewEncryptionService(masterKey, kdfSalt, kdfIterations, auditService)
+	encryptionService := services.NewEncryptionService(masterKey, kdfSalt, kdfIterations)
 
 	// Perform decryption
+	fmt.Printf("🔓 Attempting to decrypt artifact...\n")
 	result, err := encryptionService.Decrypt(req, userID)
 	if err != nil {
 		return fmt.Errorf("decryption failed: %w", err)
@@ -108,7 +114,7 @@ func runDecryptCommand(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func buildDecryptionRequest(artifactPath string) (*model.DecryptionRequest, error) {
+func buildDecryptionRequest(artifactPath string) (*services.DecryptionRequest, error) {
 	// Build access method
 	accessMethod, err := buildAccessMethod()
 	if err != nil {
@@ -124,7 +130,7 @@ func buildDecryptionRequest(artifactPath string) (*model.DecryptionRequest, erro
 	}
 
 	// Create request
-	req := &model.DecryptionRequest{
+	req := &services.DecryptionRequest{
 		ArtifactPath: artifactPath,
 		OutputPath:   outputPath,
 		AccessMethod: accessMethod,
@@ -134,7 +140,7 @@ func buildDecryptionRequest(artifactPath string) (*model.DecryptionRequest, erro
 	return req, nil
 }
 
-func buildAccessMethod() (model.AccessMethodConfig, error) {
+func buildAccessMethod() (services.AccessMethodConfig, error) {
 	// Determine which access method to use
 	methodCount := 0
 	if decryptPassphrase {
@@ -151,11 +157,11 @@ func buildAccessMethod() (model.AccessMethodConfig, error) {
 	}
 
 	if methodCount == 0 {
-		return model.AccessMethodConfig{}, fmt.Errorf("at least one access method is required")
+		return services.AccessMethodConfig{}, fmt.Errorf("at least one access method is required")
 	}
 
 	if methodCount > 1 {
-		return model.AccessMethodConfig{}, fmt.Errorf("only one access method can be specified")
+		return services.AccessMethodConfig{}, fmt.Errorf("only one access method can be specified")
 	}
 
 	// Build the appropriate access method
@@ -163,11 +169,11 @@ func buildAccessMethod() (model.AccessMethodConfig, error) {
 		// Prompt for passphrase
 		passphrase, err := promptForPassphrase()
 		if err != nil {
-			return model.AccessMethodConfig{}, fmt.Errorf("failed to read passphrase: %w", err)
+			return services.AccessMethodConfig{}, fmt.Errorf("failed to read passphrase: %w", err)
 		}
 
-		return model.AccessMethodConfig{
-			Type: model.AccessMethodTypePassphrase,
+		return services.AccessMethodConfig{
+			Type: services.AccessMethodTypePassphrase,
 			Name: "passphrase",
 			Config: map[string]interface{}{
 				"passphrase": passphrase,
@@ -177,8 +183,8 @@ func buildAccessMethod() (model.AccessMethodConfig, error) {
 	}
 
 	if decryptRuntime {
-		return model.AccessMethodConfig{
-			Type:   model.AccessMethodTypeRuntime,
+		return services.AccessMethodConfig{
+			Type:   services.AccessMethodTypeRuntime,
 			Name:   "runtime",
 			Config: map[string]interface{}{},
 		}, nil
@@ -187,17 +193,17 @@ func buildAccessMethod() (model.AccessMethodConfig, error) {
 	if decryptCertificate != "" {
 		certInfo, err := getCertificateInfo(decryptCertificate)
 		if err != nil {
-			return model.AccessMethodConfig{}, fmt.Errorf("failed to load certificate: %w", err)
+			return services.AccessMethodConfig{}, fmt.Errorf("failed to load certificate: %w", err)
 		}
 
 		// Prompt for certificate private key if needed
 		privateKeyFile, err := promptForPrivateKey()
 		if err != nil {
-			return model.AccessMethodConfig{}, fmt.Errorf("failed to read private key: %w", err)
+			return services.AccessMethodConfig{}, fmt.Errorf("failed to read private key: %w", err)
 		}
 
-		return model.AccessMethodConfig{
-			Type: model.AccessMethodTypeCertificate,
+		return services.AccessMethodConfig{
+			Type: services.AccessMethodTypeCertificate,
 			Name: "certificate-" + decryptCertificate,
 			Config: map[string]interface{}{
 				"certificate_file": decryptCertificate,
@@ -211,34 +217,48 @@ func buildAccessMethod() (model.AccessMethodConfig, error) {
 		return parseAccessMethodString(decryptAccessMethod)
 	}
 
-	return model.AccessMethodConfig{}, fmt.Errorf("no valid access method specified")
+	return services.AccessMethodConfig{}, fmt.Errorf("no valid access method specified")
 }
 
 func promptForPassphrase() (string, error) {
-	fmt.Print("Enter passphrase: ")
+	maxAttempts := 3
 
-	// Read passphrase securely without echoing
-	passphrase, err := readPassword()
-	if err != nil {
-		return "", fmt.Errorf("failed to read passphrase: %w", err)
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		if attempt > 1 {
+			fmt.Printf("\n❌ Previous attempt failed. Attempts remaining: %d\n", maxAttempts-attempt+1)
+		}
+
+		fmt.Print("🔐 Enter passphrase: ")
+
+		// Read passphrase securely without echoing
+		passphrase, err := readPassword()
+		if err != nil {
+			return "", fmt.Errorf("failed to read passphrase: %w", err)
+		}
+
+		if passphrase == "" {
+			if attempt < maxAttempts {
+				fmt.Printf("\n⚠️  Passphrase cannot be empty. Please try again.\n")
+				continue
+			}
+			return "", fmt.Errorf("passphrase cannot be empty")
+		}
+
+		// For decryption, we don't need confirmation since we're not creating anything
+		// Just validate basic requirements
+		if len(passphrase) < 8 {
+			if attempt < maxAttempts {
+				fmt.Printf("\n⚠️  Passphrase should be at least 8 characters. Please try again.\n")
+				continue
+			}
+			return "", fmt.Errorf("passphrase should be at least 8 characters")
+		}
+
+		fmt.Println() // Add newline for formatting
+		return passphrase, nil
 	}
 
-	if passphrase == "" {
-		return "", fmt.Errorf("passphrase cannot be empty")
-	}
-
-	// Confirm passphrase for security
-	fmt.Print("Confirm passphrase: ")
-	confirmPass, err := readPassword()
-	if err != nil {
-		return "", fmt.Errorf("failed to read confirmation: %w", err)
-	}
-
-	if passphrase != confirmPass {
-		return "", fmt.Errorf("passphrases do not match")
-	}
-
-	return passphrase, nil
+	return "", fmt.Errorf("maximum attempts (%d) reached. Please verify your passphrase and try again.", maxAttempts)
 }
 
 // readPassword reads password from stdin without echoing
@@ -280,7 +300,7 @@ func promptForPrivateKey() (string, error) {
 	return privateKeyFile, nil
 }
 
-func displayDecryptionResult(result *model.DecryptionResult) {
+func displayDecryptionResult(result *services.DecryptionResult) {
 	if result.Success {
 		fmt.Println("✅ Decryption completed successfully")
 		fmt.Println()
@@ -313,7 +333,7 @@ func displayDecryptionResult(result *model.DecryptionResult) {
 }
 
 // ValidateDecryptionRequest validates the decryption request before processing
-func validateDecryptionRequest(req *model.DecryptionRequest) error {
+func validateDecryptionRequest(req *services.DecryptionRequest) error {
 	// Check if artifact file exists
 	if _, err := os.Stat(req.ArtifactPath); os.IsNotExist(err) {
 		return fmt.Errorf("artifact file does not exist: %s", req.ArtifactPath)
@@ -350,7 +370,7 @@ func displayArtifactInfo(artifactPath string) error {
 }
 
 // ConfirmDecryption asks for user confirmation before decryption
-func confirmDecryption(req *model.DecryptionRequest) bool {
+func confirmDecryption(req *services.DecryptionRequest) bool {
 	fmt.Printf("🔓 Ready to decrypt artifact: %s\n", req.ArtifactPath)
 	fmt.Printf("📁 Output directory: %s\n", req.OutputPath)
 	fmt.Printf("🔑 Access method: %s\n", req.AccessMethod.Type)
@@ -366,6 +386,43 @@ func confirmDecryption(req *model.DecryptionRequest) bool {
 
 	response = strings.ToLower(strings.TrimSpace(response))
 	return response == "y" || response == "yes"
+}
+
+// displayQuickArtifactInfo displays basic artifact information without requiring decryption
+func displayQuickArtifactInfo(artifactPath string) error {
+	fileInfo, err := os.Stat(artifactPath)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("📏 Size: %d bytes\n", fileInfo.Size())
+	fmt.Printf("📅 Modified: %s\n", fileInfo.ModTime().Format("2006-01-02 15:04:05"))
+
+	// Try to read the file header to check if it's a valid artifact
+	file, err := os.Open(artifactPath)
+	if err != nil {
+		return fmt.Errorf("cannot open artifact file: %w", err)
+	}
+	defer file.Close()
+
+	// Read first few bytes to check format
+	header := make([]byte, 16)
+	_, err = file.Read(header)
+	if err != nil {
+		return fmt.Errorf("cannot read artifact header: %w", err)
+	}
+
+	// Check if it looks like an Aether Vault artifact
+	if len(header) >= 4 {
+		if string(header[:4]) == "AVA\000" {
+			fmt.Printf("🔐 Format: Aether Vault Artifact v1.0\n")
+			fmt.Printf("🔒 Encryption: AES-256-GCM\n")
+		} else {
+			fmt.Printf("⚠️  Format: Unknown or corrupted\n")
+		}
+	}
+
+	return nil
 }
 
 // NewDecryptCommand creates the decrypt command

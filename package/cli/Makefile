@@ -1,24 +1,60 @@
 # Makefile for Aether Vault CLI
 
 # Variables
-BINARY_NAME=aether-vault-cli
+BINARY_NAME=vault
 BUILD_DIR=bin
+SYSTEM_DIR=/usr/local/bin
 VERSION ?= 1.0.0
 BUILD_TIME=$(shell date -u '+%Y-%m-%d_%H:%M:%S')
 GIT_COMMIT=$(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
-LDFLAGS=-ldflags "-X main.version=$(VERSION) -X main.buildTime=$(BUILD_TIME) -X main.gitCommit=$(GIT_COMMIT)"
+LDFLAGS=-ldflags "-s -w"
 
 # Default target
 .PHONY: all
 all: clean build
 
-# Build the CLI binary
+# Build CLI targets with subcommands
 .PHONY: build
 build:
-	@echo "Building $(BINARY_NAME)..."
+	@echo "Use 'make build cli --local' or 'make build cli --system' instead"
+	@echo "Building $(BINARY_NAME) to $(BUILD_DIR)/$(BINARY_NAME) (default)..."
 	@mkdir -p $(BUILD_DIR)
 	@go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) .
 	@echo "Build complete: $(BUILD_DIR)/$(BINARY_NAME)"
+
+# Build CLI with separate targets for different modes
+.PHONY: build-cli-local build-cli-system
+
+build-cli-local:
+	@echo "🔨 Building $(BINARY_NAME) locally..."
+	@mkdir -p $(BUILD_DIR)
+	@go mod tidy
+	@go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) .
+	@echo "✅ Build complete: $(BUILD_DIR)/$(BINARY_NAME)"
+	@echo "📁 Use: ./$(BUILD_DIR)/$(BINARY_NAME) --help"
+
+build-cli-system:
+	@echo "🔨 Building $(BINARY_NAME) directly to $(SYSTEM_DIR)/$(BINARY_NAME)..."
+	@go mod tidy
+	@go build $(LDFLAGS) -o $(SYSTEM_DIR)/$(BINARY_NAME) .
+	@sudo chmod +x $(SYSTEM_DIR)/$(BINARY_NAME)
+	@echo "✅ $(BINARY_NAME) built and installed in $(SYSTEM_DIR)/"
+	@echo "🧪 Test with: $(BINARY_NAME) --help"
+
+# Alias for compatibility
+.PHONY: build-local build-system
+
+build-local: build-cli-local
+build-system: build-cli-system
+
+# Default build command
+.PHONY: build
+build: build-cli-local
+	@echo ""
+	@echo "💡 Tips:"
+	@echo "   • Use 'make build-local' for local builds"
+	@echo "   • Use 'make build-system' for global installation"
+	@echo "   • Use 'make install' for traditional installation"
 
 # Build for multiple platforms
 .PHONY: build-all
@@ -44,11 +80,12 @@ build-all: clean
 	@echo "Cross-platform builds complete"
 	@ls -la $(BUILD_DIR)/
 
-# Install to system PATH
+# Install to system PATH (traditional way)
 .PHONY: install
 install: build
-	@echo "Installing $(BINARY_NAME) to /usr/local/bin..."
-	@sudo cp $(BUILD_DIR)/$(BINARY_NAME) /usr/local/bin/
+	@echo "Installing $(BINARY_NAME) to $(SYSTEM_DIR)..."
+	@sudo cp $(BUILD_DIR)/$(BINARY_NAME) $(SYSTEM_DIR)/
+	@sudo chmod +x $(SYSTEM_DIR)/$(BINARY_NAME)
 	@echo "Installation complete"
 
 # Install to user's local bin
@@ -199,39 +236,52 @@ ci: fmt lint security test-coverage
 help:
 	@echo "Aether Vault CLI - Makefile targets:"
 	@echo ""
-	@echo "Build targets:"
-	@echo "  build         Build the CLI binary"
-	@echo "  build-all     Build for all platforms"
-	@echo "  clean         Clean build artifacts"
-	@echo "  clean-all     Clean everything including dependencies"
+	@echo "🔨 Build targets:"
+	@echo "  build             Build CLI (default: local)"
+	@echo "  build-local       Build CLI in bin/vault"
+	@echo "  build-system      Build and install to /usr/local/bin"
+	@echo "  build-cli-local   Alias for build-local"
+	@echo "  build-cli-system  Alias for build-system"
+	@echo "  build-all         Build for all platforms"
+	@echo "  clean             Clean build artifacts"
+	@echo "  clean-all         Clean everything including dependencies"
 	@echo ""
-	@echo "Install targets:"
-	@echo "  install       Install to /usr/local/bin"
-	@echo "  install-local Install to ~/.local/bin"
+	@echo "📦 Install targets:"
+	@echo "  install           Build and install to $(SYSTEM_DIR)"
+	@echo "  install-local     Build and install to ~/.local/bin"
 	@echo ""
-	@echo "Test targets:"
-	@echo "  test          Run tests"
-	@echo "  test-coverage Run tests with coverage"
+	@echo "🧪 Test targets:"
+	@echo "  test              Run tests"
+	@echo "  test-coverage     Run tests with coverage"
 	@echo ""
-	@echo "Code quality:"
-	@echo "  fmt           Format code"
-	@echo "  lint          Run linter"
-	@echo "  security      Check for vulnerabilities"
+	@echo "🔍 Code quality:"
+	@echo "  fmt               Format code"
+	@echo "  lint              Run linter"
+	@echo "  security          Check for vulnerabilities"
 	@echo ""
-	@echo "Dependencies:"
-	@echo "  deps          Update dependencies"
-	@echo "  deps-verify   Verify dependencies"
-	@echo "  deps-download Download dependencies"
+	@echo "📚 Dependencies:"
+	@echo "  deps              Update dependencies"
+	@echo "  deps-verify       Verify dependencies"
+	@echo "  deps-download     Download dependencies"
 	@echo ""
-	@echo "Release:"
-	@echo "  release       Generate release artifacts"
+	@echo "🏷️  Release:"
+	@echo "  release           Generate release artifacts"
 	@echo ""
-	@echo "Docker:"
-	@echo "  docker-build  Build Docker image"
-	@echo "  docker-run    Run Docker container"
+	@echo "🐳 Docker:"
+	@echo "  docker-build      Build Docker image"
+	@echo "  docker-run        Run Docker container"
 	@echo ""
-	@echo "Development:"
-	@echo "  dev-setup     Install development tools"
-	@echo "  run           Build and run the CLI"
-	@echo "  run-dev       Run the CLI in development mode"
-	@echo "  ci            Run all CI checks"
+	@echo "🔧 Development:"
+	@echo "  dev-setup         Install development tools"
+	@echo "  run               Build and run CLI"
+	@echo "  run-dev           Run CLI in development mode"
+	@echo "  ci                Run all CI checks"
+	@echo ""
+	@echo "📝 Examples:"
+	@echo "  make build-local      # Build to bin/vault"
+	@echo "  make build-system     # Build and install globally"
+	@echo "  make install          # Build and install globally"
+	@echo ""
+	@echo "💡 After installation:"
+	@echo "  vault --help         # Show help"
+	@echo "  vault encrypt --help # Show encrypt help"
