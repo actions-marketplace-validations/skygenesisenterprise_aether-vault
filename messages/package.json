@@ -24,7 +24,7 @@
   "author": "Sky Genesis Enterprise",
   "license": "MIT",
   "dependencies": {
-    "ajv": "^8.12.0",
+    "ajv": "^8.17.1",
     "chalk": "^4.1.2",
     "fs-extra": "^11.1.1",
     "glob": "^8.1.0",
