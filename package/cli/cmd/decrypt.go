@@ -78,8 +78,8 @@ func runDecryptCommand(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Println()
 
-	// Create execution context
-	_, err := context.New(nil)
+	// Create execution context without server (for decryption operations)
+	_, err := context.NewWithoutServer(nil)
 	if err != nil {
 		return fmt.Errorf("failed to create context: %w", err)
 	}

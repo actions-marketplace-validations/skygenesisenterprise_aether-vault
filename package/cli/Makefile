@@ -35,21 +35,31 @@ build-cli-local:
 
 build-cli-system:
 	@echo "🔨 Building $(BINARY_NAME) directly to $(SYSTEM_DIR)/$(BINARY_NAME)..."
+	@mkdir -p $(BUILD_DIR)
 	@go mod tidy
-	@go build $(LDFLAGS) -o $(SYSTEM_DIR)/$(BINARY_NAME) .
-	@sudo chmod +x $(SYSTEM_DIR)/$(BINARY_NAME)
-	@echo "✅ $(BINARY_NAME) built and installed in $(SYSTEM_DIR)/"
+	@go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) .
+	@echo "📋 Installing to $(SYSTEM_DIR)..."
+	@if [ -w "$(SYSTEM_DIR)" ]; then \
+		cp $(BUILD_DIR)/$(BINARY_NAME) $(SYSTEM_DIR)/$(BINARY_NAME); \
+		chmod +x $(SYSTEM_DIR)/$(BINARY_NAME); \
+		echo "✅ $(BINARY_NAME) installed in $(SYSTEM_DIR)/"; \
+	else \
+		echo "🔐 Need sudo to install to $(SYSTEM_DIR)/"; \
+		sudo cp $(BUILD_DIR)/$(BINARY_NAME) $(SYSTEM_DIR)/$(BINARY_NAME); \
+		sudo chmod +x $(SYSTEM_DIR)/$(BINARY_NAME); \
+		echo "✅ $(BINARY_NAME) installed in $(SYSTEM_DIR)/"; \
+	fi
 	@echo "🧪 Test with: $(BINARY_NAME) --help"
 
+
+
 # Alias for compatibility
-.PHONY: build-local build-system
+.PHONY: build-local build-system build build-default
 
 build-local: build-cli-local
 build-system: build-cli-system
-
-# Default build command
-.PHONY: build
 build: build-cli-local
+build-default: build-cli-local
 	@echo ""
 	@echo "💡 Tips:"
 	@echo "   • Use 'make build-local' for local builds"

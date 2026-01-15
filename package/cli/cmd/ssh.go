@@ -95,8 +95,8 @@ func newSshCommand() *cobra.Command {
 Just specify the target and everything else (certificates, authentication, keys) is managed seamlessly.`,
 		Example: `  vault ssh server.example.com          # Connect with auto-detected settings
   vault ssh 192.168.1.100              # Connect by IP
-  vault ssh switch01 --verbose          # Connect with details
-  vault ssh firewall.company.com        # Auto-detects firewall role
+  vault ssh switch01 --verbose         # Connect with details
+  vault ssh firewall.company.com       # Auto-detects firewall role
   vault ssh db-prod-01 --role admin    # Specify role if needed`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

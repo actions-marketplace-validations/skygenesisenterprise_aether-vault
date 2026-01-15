@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/google/uuid"
@@ -40,18 +41,19 @@ Examples:
 }
 
 var (
-	encryptOutputPath    string
-	encryptDescription   string
-	encryptCompress      bool
-	encryptAccessMethods []string
-	encryptPolicies      []string
-	encryptPassphrase    bool
-	encryptRuntime       bool
-	encryptCertificate   string
-	encryptTTL           string
-	encryptEnvironment   string
-	encryptInstance      string
-	encryptRegion        string
+	encryptOutputPath     string
+	encryptDescription    string
+	encryptCompress       bool
+	encryptRemoveOriginal bool
+	encryptAccessMethods  []string
+	encryptPolicies       []string
+	encryptPassphrase     bool
+	encryptRuntime        bool
+	encryptCertificate    string
+	encryptTTL            string
+	encryptEnvironment    string
+	encryptInstance       string
+	encryptRegion         string
 )
 
 func init() {
@@ -61,6 +63,7 @@ func init() {
 	encryptCmd.Flags().StringVarP(&encryptOutputPath, "output", "o", "", "Output file path (default: source.ava)")
 	encryptCmd.Flags().StringVar(&encryptDescription, "description", "", "Description for the encrypted artifact")
 	encryptCmd.Flags().BoolVar(&encryptCompress, "compress", true, "Compress content before encryption")
+	encryptCmd.Flags().BoolVar(&encryptRemoveOriginal, "remove-original", true, "Remove original files/folders after successful encryption")
 
 	// Access methods
 	encryptCmd.Flags().StringSliceVar(&encryptAccessMethods, "access-method", []string{}, "Access methods (passphrase, runtime, certificate:file)")
@@ -88,13 +91,18 @@ func runEncryptCommand(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("source path does not exist: %s", sourcePath)
 	}
 
-	// Set default output path
+	// Check if we should use password protection instead of direct .ava conversion
+	if encryptPassphrase || containsPasswordMethod(encryptAccessMethods) {
+		return runPasswordProtectionFlow(sourcePath)
+	}
+
+	// Set default output path for normal encryption
 	if encryptOutputPath == "" {
 		encryptOutputPath = sourcePath + ".ava"
 	}
 
-	// Create execution context
-	_, err := context.New(nil)
+	// Create execution context without server (for encryption operations)
+	_, err := context.NewWithoutServer(nil)
 	if err != nil {
 		return fmt.Errorf("failed to create context: %w", err)
 	}
@@ -125,6 +133,16 @@ func runEncryptCommand(cmd *cobra.Command, args []string) error {
 	// Display result
 	displayEncryptionResult(result)
 
+	// Restrict access to original files if requested
+	if encryptRemoveOriginal {
+		fmt.Printf("🔒 Restricting access to original files/directories...\n")
+		if err := restrictOriginalFiles(sourcePath); err != nil {
+			fmt.Printf("⚠️  Warning: Failed to restrict original files: %v\n", err)
+		} else {
+			fmt.Printf("✅ Original files access restricted - only decryption can restore them\n")
+		}
+	}
+
 	return nil
 }
 
@@ -133,6 +151,25 @@ func buildEncryptionRequest(sourcePath string) (*services.EncryptionRequest, err
 	accessMethods, err := buildAccessMethods()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build access methods: %w", err)
+	}
+
+	// For passphrase access method, prompt for password interactively
+	if encryptPassphrase {
+		password, err := promptForPassword()
+		if err != nil {
+			return nil, fmt.Errorf("failed to read password: %w", err)
+		}
+
+		// Update access method config with the password
+		for i := range accessMethods {
+			if accessMethods[i].Type == services.AccessMethodTypePassphrase {
+				if accessMethods[i].Config == nil {
+					accessMethods[i].Config = make(map[string]interface{})
+				}
+				accessMethods[i].Config["password"] = password
+				break
+			}
+		}
 	}
 
 	// Build policies
@@ -355,6 +392,357 @@ func displayEncryptionResult(result *services.EncryptionResult) {
 	// Display creation time
 	fmt.Println()
 	fmt.Printf("⏰ Created: %s\n", result.CreatedAt.Format("2006-01-02 15:04:05"))
+}
+
+// promptForPassword prompts user for a password securely
+func promptForPassword() (string, error) {
+	fmt.Print("🔐 Enter password: ")
+
+	// Try to read password securely first
+	password, err := readPassword()
+	if err != nil {
+		// Fallback to standard input if terminal not available
+		fmt.Println("\n⚠️  Secure input not available, using standard input")
+		fmt.Print("🔐 Enter password (will be visible): ")
+		var input string
+		_, err := fmt.Scanln(&input)
+		if err != nil && err.Error() != "unexpected newline" {
+			return "", fmt.Errorf("failed to read password: %w", err)
+		}
+		password = input
+	}
+
+	if password == "" {
+		return "", fmt.Errorf("password cannot be empty")
+	}
+
+	// Confirm password for security
+	fmt.Print("🔐 Confirm password: ")
+	confirmPassword, err := readPassword()
+	if err != nil {
+		// Fallback to standard input if terminal not available
+		fmt.Println("\n⚠️  Secure input not available, using standard input")
+		fmt.Print("🔐 Confirm password (will be visible): ")
+		var input string
+		_, err := fmt.Scanln(&input)
+		if err != nil && err.Error() != "unexpected newline" {
+			return "", fmt.Errorf("failed to read confirmation: %w", err)
+		}
+		confirmPassword = input
+	}
+
+	if password != confirmPassword {
+		return "", fmt.Errorf("passwords do not match")
+	}
+
+	return password, nil
+}
+
+// restrictOriginalFiles restricts access to original files/folders after encryption
+func restrictOriginalFiles(sourcePath string) error {
+	// Check if source is a directory or file
+	fileInfo, err := os.Stat(sourcePath)
+	if err != nil {
+		return fmt.Errorf("failed to stat source path: %w", err)
+	}
+
+	if fileInfo.IsDir() {
+		// Restrict directory and all contents
+		return restrictDirectory(sourcePath)
+	} else {
+		// Restrict single file
+		return restrictFile(sourcePath)
+	}
+}
+
+// restrictDirectory restricts access to a directory and all its contents
+func restrictDirectory(dirPath string) error {
+	return filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Skip the directory itself for now, handle it after walking
+		if path == dirPath && info.IsDir() {
+			return nil
+		}
+
+		return restrictFile(path)
+	})
+
+	return nil
+}
+
+// containsPasswordMethod checks if any access method is password/passphrase related
+func containsPasswordMethod(methods []string) bool {
+	for _, method := range methods {
+		if method == "passphrase" || method == "password" {
+			return true
+		}
+	}
+	return false
+}
+
+// runPasswordProtectionFlow handles the password protection workflow
+func runPasswordProtectionFlow(sourcePath string) error {
+	fmt.Printf("🔐 Password Protection Mode\n")
+	fmt.Printf("📁 Resource: %s\n", sourcePath)
+	fmt.Println()
+
+	// Prompt for password to assign to the resource
+	password, err := promptForResourcePassword()
+	if err != nil {
+		return fmt.Errorf("password prompt failed: %w", err)
+	}
+
+	// Create execution context without server
+	_, err = context.NewWithoutServer(nil)
+	if err != nil {
+		return fmt.Errorf("failed to create context: %w", err)
+	}
+
+	// Set output path for encrypted file
+	if encryptOutputPath == "" {
+		encryptOutputPath = sourcePath + ".ava"
+	}
+
+	// Build encryption request with password
+	req, err := buildPasswordProtectionRequest(sourcePath, password)
+	if err != nil {
+		return fmt.Errorf("failed to build encryption request: %w", err)
+	}
+
+	// Get user ID
+	userID := uuid.New()
+
+	// Create encryption service
+	masterKey, kdfSalt, kdfIterations, err := getEncryptionConfig()
+	if err != nil {
+		return fmt.Errorf("failed to get encryption configuration: %w", err)
+	}
+
+	encryptionService := services.NewEncryptionService(masterKey, kdfSalt, kdfIterations)
+
+	// Perform encryption
+	fmt.Printf("🔒 Encrypting resource with password protection...\n")
+	result, err := encryptionService.Encrypt(req, userID)
+	if err != nil {
+		return fmt.Errorf("encryption failed: %w", err)
+	}
+
+	// Display result
+	displayEncryptionResult(result)
+
+	// Restrict access to original files
+	fmt.Printf("🔒 Restricting access to original files/directories...\n")
+	if err := restrictOriginalFiles(sourcePath); err != nil {
+		fmt.Printf("⚠️  Warning: Failed to restrict original files: %v\n", err)
+	} else {
+		fmt.Printf("✅ Original files access restricted - password required to access\n")
+	}
+
+	// Create password-protected launcher
+	fmt.Printf("🚀 Creating password-protected launcher...\n")
+	if err := createPasswordLauncher(encryptOutputPath, password); err != nil {
+		fmt.Printf("⚠️  Warning: Failed to create launcher: %v\n", err)
+	} else {
+		fmt.Printf("✅ Password launcher created - double-click to access with password\n")
+	}
+
+	return nil
+}
+
+// promptForResourcePassword prompts for password to assign to the resource
+func promptForResourcePassword() (string, error) {
+	fmt.Println("🔑 Set password for this resource:")
+	fmt.Printf("   This password will be required to access the encrypted content\n")
+	fmt.Println()
+
+	maxAttempts := 3
+
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		if attempt > 1 {
+			fmt.Printf("\n❌ Passwords didn't match. Attempts remaining: %d\n", maxAttempts-attempt+1)
+		}
+
+		fmt.Print("🔐 Enter password to assign: ")
+		password, err := readPassword()
+		if err != nil {
+			// Fallback to standard input if terminal not available
+			fmt.Println("\n⚠️  Secure input not available, using standard input")
+			fmt.Print("🔐 Enter password to assign (will be visible): ")
+			var input string
+			_, err := fmt.Scanln(&input)
+			if err != nil && err.Error() != "unexpected newline" {
+				return "", fmt.Errorf("failed to read password: %w", err)
+			}
+			password = input
+		}
+
+		if password == "" {
+			if attempt < maxAttempts {
+				fmt.Printf("\n⚠️  Password cannot be empty. Please try again.\n")
+				continue
+			}
+			return "", fmt.Errorf("password cannot be empty")
+		}
+
+		if len(password) < 8 {
+			if attempt < maxAttempts {
+				fmt.Printf("\n⚠️  Password should be at least 8 characters. Please try again.\n")
+				continue
+			}
+			return "", fmt.Errorf("password should be at least 8 characters")
+		}
+
+		fmt.Print("🔐 Confirm password: ")
+		confirmPassword, err := readPassword()
+		if err != nil {
+			// Fallback to standard input if terminal not available
+			fmt.Println("\n⚠️  Secure input not available, using standard input")
+			fmt.Print("🔐 Confirm password (will be visible): ")
+			var input string
+			_, err := fmt.Scanln(&input)
+			if err != nil && err.Error() != "unexpected newline" {
+				return "", fmt.Errorf("failed to read confirmation: %w", err)
+			}
+			confirmPassword = input
+		}
+
+		if password == confirmPassword {
+			fmt.Println()
+			fmt.Printf("✅ Password set successfully\n")
+			return password, nil
+		}
+	}
+
+	return "", fmt.Errorf("maximum attempts (%d) reached. Please try again.", maxAttempts)
+}
+
+// buildPasswordProtectionRequest builds encryption request with password method
+func buildPasswordProtectionRequest(sourcePath, password string) (*services.EncryptionRequest, error) {
+	// Create access method config with password
+	accessMethods := []services.AccessMethodConfig{
+		{
+			Type: services.AccessMethodTypePassphrase,
+			Name: "password",
+			Config: map[string]interface{}{
+				"password":   password,
+				"iterations": 100000,
+			},
+		},
+	}
+
+	// Create request
+	req := &services.EncryptionRequest{
+		SourcePath:    sourcePath,
+		OutputPath:    encryptOutputPath,
+		AccessMethods: accessMethods,
+		Policies:      []services.EncryptionPolicyConfig{},
+		Description:   encryptDescription,
+		Compression:   encryptCompress,
+	}
+
+	return req, nil
+}
+
+// createPasswordLauncher creates an executable script that prompts for password when double-clicked
+func createPasswordLauncher(encryptedFilePath, password string) error {
+	// Create launcher script path
+	launcherPath := encryptedFilePath + ".sh"
+
+	// Create script content
+	scriptContent := fmt.Sprintf(`#!/bin/bash
+# Aether Vault Password Launcher
+# This script will prompt for password to decrypt the encrypted file
+
+ENCRYPTED_FILE="%s"
+OUTPUT_DIR="%s_decrypted"
+
+echo "🔐 Aether Vault - Encrypted File"
+echo "📁 File: $ENCRYPTED_FILE"
+echo ""
+
+# Prompt for password
+echo "🔑 Enter password to decrypt:"
+read -s password
+echo ""
+
+# Attempt to decrypt using vault CLI
+if vault decrypt "$ENCRYPTED_FILE" --passphrase --output "$OUTPUT_DIR" <<< "$password"; then
+    echo "✅ Decryption successful!"
+    echo "📁 Files are available in: $OUTPUT_DIR"
+    
+    # Ask if user wants to open the decrypted folder
+    read -p "🚀 Open decrypted folder? (y/n): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        if command -v xdg-open > /dev/null 2>&1; then
+            xdg-open "$OUTPUT_DIR"
+        elif command -v open > /dev/null 2>&1; then
+            open "$OUTPUT_DIR"
+        elif command -v explorer > /dev/null 2>&1; then
+            explorer "$OUTPUT_DIR"
+        else
+            echo "📂 Decrypted files available at: $OUTPUT_DIR"
+        fi
+    fi
+else
+    echo "❌ Decryption failed! Invalid password or corrupted file."
+    echo "Please try again with the correct password."
+    exit 1
+fi
+`, encryptedFilePath, strings.TrimSuffix(encryptedFilePath, filepath.Ext(encryptedFilePath)))
+
+	// Write launcher script
+	if err := os.WriteFile(launcherPath, []byte(scriptContent), 0755); err != nil {
+		return fmt.Errorf("failed to create launcher script: %w", err)
+	}
+
+	// For desktop environments, also create a .desktop file on Linux
+	if runtime.GOOS == "linux" {
+		desktopPath := strings.TrimSuffix(encryptedFilePath, filepath.Ext(encryptedFilePath)) + ".desktop"
+		desktopContent := fmt.Sprintf(`[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Encrypted File - %s
+Comment=Click to decrypt and access encrypted content
+Exec=%s
+Icon=folder-locked
+Terminal=true
+Categories=Utility;Security;
+Keywords=encrypted,password,decrypt,vault;
+`, filepath.Base(encryptedFilePath), launcherPath)
+
+		if err := os.WriteFile(desktopPath, []byte(desktopContent), 0644); err != nil {
+			fmt.Printf("⚠️  Warning: Failed to create desktop file: %v\n", err)
+		}
+	}
+
+	return nil
+}
+
+// restrictFile restricts access to a single file by removing read/write permissions
+func restrictFile(filePath string) error {
+	// Remove read and write permissions for owner, group, and others
+	// Only keep execute permission if it was executable
+	fileInfo, err := os.Stat(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to stat file %s: %w", filePath, err)
+	}
+
+	var newMode os.FileMode = 0 // No permissions
+
+	// Keep execute permission if it was executable
+	if fileInfo.Mode().Perm()&0111 != 0 {
+		newMode = 0111 // Execute only
+	}
+
+	if err := os.Chmod(filePath, newMode); err != nil {
+		return fmt.Errorf("failed to change permissions for %s: %w", filePath, err)
+	}
+
+	return nil
 }
 
 // NewEncryptCommand creates the encrypt command
