@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/signal"
 
-	
 	"syscall"
 	"time"
 
@@ -18,9 +17,9 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/skygenesisenterprise/aether-vault/package/cli/server/config"
-	"github.com/skygenesisenterprise/aether-vault/package/cli/server/src/model"
-	"github.com/skygenesisenterprise/aether-vault/package/cli/server/src/routes"
-	"github.com/skygenesisenterprise/aether-vault/package/cli/server/src/services"
+	"github.com/skygenesisenterprise/aether-vault/package/cli/server/model"
+	"github.com/skygenesisenterprise/aether-vault/package/cli/server/routes"
+	"github.com/skygenesisenterprise/aether-vault/package/cli/server/services"
 )
 
 func main() {

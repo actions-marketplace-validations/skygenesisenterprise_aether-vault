@@ -94,6 +94,10 @@ Quick start:
 	cmd.AddCommand(newShellCommand())
 	cmd.AddCommand(newDataCommand())
 
+	// Add encryption commands
+	cmd.AddCommand(NewEncryptCommand())
+	cmd.AddCommand(NewDecryptCommand())
+
 	return cmd
 }
 
