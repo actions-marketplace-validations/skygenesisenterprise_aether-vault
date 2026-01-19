@@ -13,7 +13,7 @@ importers:
         version: 8.0.0
       '@loglayer/transport-pino':
         specifier: ^2.2.16
-        version: 2.2.17(pino@10.2.0)
+        version: 2.2.17(pino@10.2.1)
       '@prisma/client':
         specifier: ^7.2.0
         version: 7.2.0(prisma@7.2.0)(typescript@5.9.3)
@@ -27,8 +27,8 @@ importers:
         specifier: ^8.4.0
         version: 8.4.0
       pino:
-        specifier: ^10.2.0
-        version: 10.2.0
+        specifier: ^10.2.1
+        version: 10.2.1
     devDependencies:
       '@changesets/cli':
         specifier: ^2.27.1
@@ -457,8 +457,8 @@ importers:
         specifier: ^4.2.1
         version: 4.2.1
       pino:
-        specifier: ^10.2.0
-        version: 10.2.0
+        specifier: ^10.2.1
+        version: 10.2.1
       pino-pretty:
         specifier: ^10.3.0
         version: 10.3.1
@@ -3334,14 +3334,14 @@ packages:
     engines: {node: '>=18'}
     dev: false
 
-  /@loglayer/transport-pino@2.2.17(pino@10.2.0):
+  /@loglayer/transport-pino@2.2.17(pino@10.2.1):
     resolution: {integrity: sha512-c4Lc+nu+NTdG7iTvsOJ7BzMYfqmm7+F2CjJnvo0X9OKYVbJIlK4FZOB9cTI/QTi3d/+2D21mTPwhOI2ejQbuGQ==}
     engines: {node: '>=18'}
     peerDependencies:
       pino: '*'
     dependencies:
       '@loglayer/transport': 2.3.13
-      pino: 10.2.0
+      pino: 10.2.1
     dev: false
 
   /@loglayer/transport@2.3.13:
@@ -10614,7 +10614,7 @@ packages:
       fast-json-stringify: 6.1.1
       find-my-way: 9.4.0
       light-my-request: 6.6.0
-      pino: 10.2.0
+      pino: 10.2.1
       process-warning: 5.0.0
       rfdc: 1.4.1
       secure-json-parse: 4.1.0
@@ -15983,8 +15983,8 @@ packages:
     resolution: {integrity: sha512-BndPH67/JxGExRgiX1dX0w1FvZck5Wa4aal9198SrRhZjH3GxKQUKIBnYJTdj2HDN3UQAS06HlfcSbQj2OHmaw==}
     dev: false
 
-  /pino@10.2.0:
-    resolution: {integrity: sha512-NFnZqUliT+OHkRXVSf8vdOr13N1wv31hRryVjqbreVh/SDCNaI6mnRDDq89HVRCbem1SAl7yj04OANeqP0nT6A==}
+  /pino@10.2.1:
+    resolution: {integrity: sha512-Tjyv76gdUe2460dEhtcnA4fU/+HhGq2Kr7OWlo2R/Xxbmn/ZNKWavNWTD2k97IE+s755iVU7WcaOEIl+H3cq8w==}
     hasBin: true
     dependencies:
       '@pinojs/redact': 0.4.0
