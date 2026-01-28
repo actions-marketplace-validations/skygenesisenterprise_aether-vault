@@ -218,8 +218,8 @@ importers:
         specifier: ^5.0.0
         version: 5.0.0(@types/react@18.3.27)(react@18.3.1)
       next-seo:
-        specifier: ^6.5.0
-        version: 6.8.0(next@16.1.4)(react-dom@19.2.4)(react@18.3.1)
+        specifier: ^7.1.0
+        version: 7.1.0(next@16.1.4)(react@18.3.1)
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.2.4)(react@18.3.1)
@@ -15046,16 +15046,14 @@ packages:
       - supports-color
     dev: false
 
-  /next-seo@6.8.0(next@16.1.4)(react-dom@19.2.4)(react@18.3.1):
-    resolution: {integrity: sha512-zcxaV67PFXCSf8e6SXxbxPaOTgc8St/esxfsYXfQXMM24UESUVSXFm7f2A9HMkAwa0Gqn4s64HxYZAGfdF4Vhg==}
+  /next-seo@7.1.0(next@16.1.4)(react@18.3.1):
+    resolution: {integrity: sha512-gTWm9wnAXvtqD8QPIpbBA6iMnqMp1WyNTGza9QJPabVIPoX+ZDt1/J0KUkziiIKRyad+nSGLC0BfHgekqcfq0Q==}
     peerDependencies:
-      next: ^8.1.1-canary.54 || >=9.0.0
-      react: '>=16.0.0'
-      react-dom: '>=16.0.0'
+      next: '>=13.4.0'
+      react: '>=18.2.0'
     dependencies:
       next: 16.1.4(@babel/core@7.28.6)(@opentelemetry/api@1.9.0)(react-dom@19.2.4)(react@18.3.1)
       react: 18.3.1
-      react-dom: 19.2.4(react@18.3.1)
     dev: false
 
   /next-themes@0.4.6(react-dom@19.2.4)(react@18.3.1):
