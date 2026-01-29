@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@capacitor/core':
-        specifier: ^8.0.0
-        version: 8.0.0
+        specifier: ^8.0.2
+        version: 8.0.2
       '@loglayer/transport-pino':
         specifier: ^2.2.16
         version: 2.2.17(pino@10.3.0)
@@ -86,8 +86,8 @@ importers:
         version: 1.4.0
     devDependencies:
       '@capacitor/core':
-        specifier: ^8.0.0
-        version: 8.0.0
+        specifier: ^8.0.2
+        version: 8.0.2
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.1.18
@@ -406,8 +406,8 @@ importers:
         version: 1.4.0
     devDependencies:
       '@capacitor/core':
-        specifier: ^8.0.0
-        version: 8.0.0
+        specifier: ^8.0.2
+        version: 8.0.2
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.1.18
@@ -975,8 +975,8 @@ packages:
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
     dev: true
 
-  /@capacitor/core@8.0.0:
-    resolution: {integrity: sha512-250HTVd/W/KdMygoqaedisvNbHbpbQTN2Hy/8ZYGm1nAqE0Fx7sGss4l0nDg33STxEdDhtVRoL2fIaaiukKseA==}
+  /@capacitor/core@8.0.2:
+    resolution: {integrity: sha512-EXZfxkL6GFJS2cb7TIBR7RiHA5iz6ufDcl1VmUpI2pga3lJ5Ck2+iqbx7N+osL3XYem9ad4XCidJEMm64DX6UQ==}
     dependencies:
       tslib: 2.8.1
 
