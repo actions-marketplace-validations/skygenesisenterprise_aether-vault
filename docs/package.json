@@ -144,7 +144,7 @@
     "@types/react-syntax-highlighter": "^15.5.11",
     "@typescript-eslint/eslint-plugin": "^8.54.0",
     "@typescript-eslint/parser": "^7.16.0",
-    "autoprefixer": "^10.4.19",
+    "autoprefixer": "^10.4.24",
     "conventional-changelog-cli": "^4.1.0",
     "cspell": "^9.4.0",
     "eslint": "^8.57.0",
