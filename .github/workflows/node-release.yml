@@ -1,4 +1,4 @@
-name: Aether Vault Node Release
+name: Aether Identity Node Release
 
 on:
   push:
@@ -18,9 +18,7 @@ jobs:
           node-version: 20
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 8
+        uses: pnpm/action-setup@v6
 
       - name: Install dependencies
         working-directory: package/node
@@ -51,9 +49,7 @@ jobs:
           registry-url: https://registry.npmjs.org/
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 8
+        uses: pnpm/action-setup@v6
 
       - name: Configure npmjs authentication
         run: |
@@ -62,17 +58,27 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: Prepare npm publish
+        working-directory: package/node
+        run: |
+          jq '.name = "aether-identity"' package.json > package.tmp.json
+          mv package.tmp.json package.json
+
       - name: Publish to npm
         working-directory: package/node
         run: pnpm publish --access public --no-git-checks --registry https://registry.npmjs.org/
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: Revert package.json
+        working-directory: package/node
+        run: git checkout package.json
+
   publish-gpr:
     needs: build
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
     steps:
       - name: Checkout code
@@ -85,15 +91,12 @@ jobs:
           registry-url: https://npm.pkg.github.com/
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 8
+        uses: pnpm/action-setup@v6
 
       - name: Prepare GitHub Packages publish
         working-directory: package/node
         run: |
-          # Ajouter le scope temporairement pour GitHub Packages
-          jq '.name = "@skygenesisenterprise/aether-vault"' package.json > package.tmp.json
+          jq '.name = "@skygenesisenterprise/aether-identity"' package.json > package.tmp.json
           mv package.tmp.json package.json
 
       - name: Configure GitHub Packages authentication
@@ -118,70 +121,19 @@ jobs:
       - name: Generate Release Notes
         id: release_notes
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
-          cat > release_notes.md << EOF
-          # Aether Vault Node.js SDK v$VERSION
-
-          ## 📦 Package Information
-          - **Package Name npmjs**: \`aether-vault\`
-          - **Package Name GitHub**: \`@skygenesisenterprise/aether-vault\`
-          - **Version**: v$VERSION
-          - **Registry**: npm and GitHub Packages
-
-          ## 🚀 Installation
-
-          ### From npm
-          \`\`\`bash
-          npm install aether-vault
-          \`\`\`
-
-          ### From GitHub Packages
-          \`\`\`bash
-          npm install @skygenesisenterprise/aether-vault
-          \`\`\`
-
-          ## 📖 Quick Start
-          \`\`\`typescript
-          import { AetherVaultClient } from 'aether-vault';
-
-          const client = new AetherVaultClient({
-            endpoint: 'https://your-vault-endpoint',
-            token: 'your-token'
-          });
-          \`\`\`
-
-          ## 🔧 Features
-          - ✅ Secure secrets management
-          - ✅ TOTP support
-          - ✅ Identity and access management
-          - ✅ Policy management
-          - ✅ Audit logging
-          - ✅ TypeScript support
-          - ✅ Node.js 18+ compatible
-
-          ## 📚 Documentation
-          - [README](https://github.com/skygenesisenterprise/aether-vault/blob/main/package/node/README.md)
-          - [API Documentation](https://github.com/skygenesisenterprise/aether-vault/tree/main/package/node/docs)
-          - [Examples](https://github.com/skygenesisenterprise/aether-vault/tree/main/package/node/examples)
-
-          ## 🐛 Bug Reports & Feature Requests
-          Please report issues on [GitHub Issues](https://github.com/skygenesisenterprise/aether-vault/issues).
-
-          ---
-          **Note**: Automated release.
-          EOF
-
+          VERSION=${GITHUB_REF_NAME}
+          printf '%s\n' "# Aether Identity Node.js SDK $VERSION" "" "## Package Information" "- Package Name npmjs: aether-identity" "- Package Name GitHub: @skygenesisenterprise/aether-identity" "- Version: $VERSION" "- Registry: npm and GitHub Packages" "" "## Installation" "" "### From npm" "\`\`\`bash" "npm install aether-identity" "\`\`\`" "" "### From GitHub Packages" "\`\`\`bash" "npm install @skygenesisenterprise/aether-identity" "\`\`\`" "" "## Quick Start" "\`\`\`typescript" "import { CreateIdentityClient } from 'aether-identity';" "" "const client = new CreateIdentityClient({" "  endpoint: 'https://your-identity-endpoint'," "  token: 'your-token'" "});" "\`\`\`" "" "## Features" "- OAuth2/OIDC support" "- Multi-factor authentication" "- Identity and access management" "- Secure account management" "- TypeScript support" "- Node.js 18+ compatible" "" "## Documentation" "- README: https://github.com/skygenesisenterprise/aether-identity/blob/main/package/node/README.md" "- API Documentation: https://github.com/skygenesisenterprise/aether-identity/tree/main/package/node/docs" "- Examples: https://github.com/skygenesisenterprise/aether-identity/tree/main/package/node/examples" "" "## Bug Reports & Feature Requests" "Please report issues on GitHub Issues: https://github.com/skygenesisenterprise/aether-identity/issues" "" "---" "Note: Automated release." > release_notes.md
           echo "release_notes<<EOF" >> $GITHUB_OUTPUT
           cat release_notes.md >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          name: Aether Vault Node.js SDK ${{ github.ref }}
+          tag_name: ${{ github.ref_name }}
+          name: Aether Identity Node.js SDK ${{ github.ref_name }}
           body: ${{ steps.release_notes.outputs.release_notes }}
           draft: false
           prerelease: false
