@@ -31,5 +31,14 @@
     "node": ">=18.0.0",
     "terraform": ">=1.6.0"
   },
-  "private": true
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/skygenesisenterprise/aether-vault.git",
+    "directory": "infrastructure"
+  },
+  "bugs": {
+    "url": "https://github.com/skygenesisenterprise/aether-vault/issues"
+  },
+  "homepage": "https://github.com/skygenesisenterprise/aether-vault/tree/main/infrastructure"
 }
